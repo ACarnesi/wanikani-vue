@@ -1,5 +1,4 @@
-
-namespace WaniKani
+declare module WaniKani
 {
 
     /**
@@ -514,7 +513,7 @@ namespace WaniKani
         /**
          * The UTF-8 characters for the subject, including kanji and hiragana.
          */
-        characters?: string;
+        characters?: string | null;
 
         /**
          * Timestamp when the subject was created.
@@ -530,7 +529,7 @@ namespace WaniKani
          * Timestamp when the subject was hidden, indicating associated assignments will no longer
          * appear in lessons or reviews and that the subject page is no longer visible on wanikani.com.
          */
-        hiddenAt?: Date;
+        hiddenAt?: Date | null;
 
         /**
          * The position that the subject appears in lessons.
@@ -601,11 +600,7 @@ namespace WaniKani
         type: AuxiliaryMeaningType;
     }
 
-    export enum AuxiliaryMeaningType
-    {
-        Whitelist = 'whitelist',
-        Blacklist = 'blacklist',
-    }
+    export type AuxiliaryMeaningType = 'whitelist' | 'blacklist';
 
     export interface Radical extends Subject
     {
@@ -702,12 +697,7 @@ namespace WaniKani
         reading: string;
     }
 
-    export enum ReadingType
-    {
-        Kunyomi = 'kunyomi',
-        Nanori = 'nanori',
-        Onyomi = 'onyomi',
-    }
+    export type ReadingType = 'kunyomi' | 'nanori' | 'onyomi';
 
     export interface Vocabulary extends Subject
     {
@@ -1048,16 +1038,10 @@ namespace WaniKani
         updatedAfter?: Date;
     }
 
-    /**
-     * The type of the associated subject, one of: kana_vocabulary, kanji, radical, or vocabulary.
-     */
-    export enum SubjectType
-    {
-        Radical = 'radical',
-        Kanji = 'kanji',
-        Vocabulary = 'vocabulary',
-        KanaVocabulary = 'kana_vocabulary',
-    }
+    // /**
+    //  * The type of the associated subject, one of: kana_vocabulary, kanji, radical, or vocabulary.
+    //  */
+    export type SubjectType = 'kana_vocabulary' | 'kanji' | 'radical' | 'vocabulary';
 
     /**
      * A base class with common values across WaniKani models e.g. "assignment"
@@ -1116,7 +1100,7 @@ namespace WaniKani
         /**
          * Identifier unique to a resource.
          */
-        id: number;
+        id?: number;
     }
 
     /**

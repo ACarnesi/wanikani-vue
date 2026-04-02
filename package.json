@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "camelcase-keys-deep": "^0.1.0",
+    "pinia": "^3.0.4",
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.25"
   },
   "devDependencies": {
     "@testing-library/vue": "^8.1.0",
+    "@types/camelcase-keys-deep": "^0.1.2",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",
