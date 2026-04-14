@@ -5,7 +5,9 @@
 </template>
 
 <script setup lang="ts">
+import { useSummaryStore } from '@stores/wanikani/summary';
 
+const summaryStore = useSummaryStore();
 
 
 </script>

@@ -598,15 +598,15 @@ export function isKanaVocabulary(value: unknown): value is WaniKani.KanaVocabula
 export function isSummary(value: unknown): value is WaniKani.Summary
 {
     if (!isPlainObject(value)) return false;
-    const { lessons, reviews, nextReviewAt } = value;
+    const { lessons, reviews, nextReviewsAt } = value;
 
     if (!isArray(lessons, isLessonReview)) return false;
     if (!isArray(reviews, isLessonReview)) return false;
-    if (!isDate(nextReviewAt)) return false;
+    if (!(nextReviewsAt === undefined || nextReviewsAt === null || isDate(nextReviewsAt))) return false;
 
     // @ts-expect-error: turn off "obj is declared but never used."
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const obj: WaniKani.Summary = { lessons, reviews, nextReviewAt };
+    const obj: WaniKani.Summary = { lessons, reviews, nextReviewsAt };
 
     return true;
 }

@@ -11,6 +11,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@composables": path.resolve(__dirname, "./src/composables"),
       "@stores": path.resolve(__dirname, "./src/stores"),
+      "@helpers": path.resolve(__dirname, "./src/helpers"),
     },
   },
   test: {
