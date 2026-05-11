@@ -1,14 +1,20 @@
 import { defineStore } from 'pinia'
-import { ref, inject } from 'vue'
+import { ref, inject, computed } from 'vue'
 import { isUser, isWaniKaniResourceWithData } from '@/@types/waniKaniTypeGuards';
 import { useWaniKaniFetchKey } from '@/@types/injectionKeys';
 import { STORAGE_KEY_API_TOKEN } from '@/helpers/constants';
+import { useRouter } from 'vue-router'
+
 
 export const useUserStore = defineStore('user', () =>
 {
     let user = ref({} as WaniKani.User);
     let userError = ref(null as Error | null);
+
+    const router = useRouter();
     const useWaniKaniFetch = inject(useWaniKaniFetchKey);
+
+    const isLoggedIn = computed(() => !!user.value.id);
 
     async function getUser(apiKey: string | null = null)
     {
@@ -56,5 +62,5 @@ export const useUserStore = defineStore('user', () =>
         user.value = {} as WaniKani.User;
     }
 
-    return { user, userError, getUser, clearUser };
+    return { user, userError, isLoggedIn, getUser, clearUser };
 });

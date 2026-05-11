@@ -6,13 +6,13 @@ export const isPlainObject = (obj: unknown): obj is Record<PropertyKey, unknown>
     return typeof obj === 'object' && !Array.isArray(obj) && obj !== null;
 };
 
-function isDate(value: unknown): value is Date
+export function isDate(value: unknown): value is Date
 {
-    let date;
+    let date = value;
 
-    if (isString(value))
+    if (isString(date))
     {
-        date = new Date(value);
+        date = new Date(date);
     }
 
     return date instanceof Date && !Number.isNaN(date.getTime());

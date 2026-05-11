@@ -2,12 +2,14 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
+import router from './routes';
 
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import createWaniKaniFetch from './helpers/createWaniKaniFetch';
 import { useWaniKaniFetchKey } from './@types/injectionKeys';
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -29,7 +31,12 @@ const analytics = getAnalytics(firebaseApp);
 const useWaniKaniFetch = createWaniKaniFetch(analytics);
 
 const pinia = createPinia()
-const app = createApp(App)
+const app = createApp(App);
+app.use(router);
+
+//TODO replace with routing logic method. Should check if a user account is connected to the app
+//If connected route to summary page, if not route to connection page 
+router.push('/connection');
 
 app.provide(useWaniKaniFetchKey, useWaniKaniFetch);
 

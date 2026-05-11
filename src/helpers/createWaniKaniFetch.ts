@@ -1,6 +1,7 @@
 import camelcaseKeysDeep from 'camelcase-keys-deep';
 import { createFetch } from '@vueuse/core';
 import { logEvent, type Analytics } from 'firebase/analytics';
+import { isDate } from '@/@types/waniKaniTypeGuards';
 
 export default function createWaniKaniFetch(firebaseAnalytics: Analytics)
 {
@@ -19,7 +20,15 @@ export default function createWaniKaniFetch(firebaseAnalytics: Analytics)
             },
             afterFetch({ data })
             {
-                data = camelcaseKeysDeep(JSON.parse(JSON.stringify(data)));
+                data = camelcaseKeysDeep(JSON.parse(JSON.stringify(data), (key, value) =>
+                {
+                    if (isDate(value)) 
+                    {
+                        return new Date(value);
+                    }
+
+                    return value;
+                }));
                 return { data };
             },
             onFetchError(ctx)
