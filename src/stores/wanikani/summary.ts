@@ -94,17 +94,26 @@ export const useSummaryStore = defineStore('summary', () =>
         let daysAssignments = upcomingAssignments.value.filter(assignment => assignment.data.availableAt
             && assignment.data.availableAt <= dayFromNow);
 
-        let forecast = daysAssignments.reduce((acc: Record<number, WaniKani.WaniKaniResource<WaniKani.Assignment>[]>, assignment) =>
+        let forecastGroups = daysAssignments.reduce((acc: Record<number, WaniKani.ForecastGroup>, assignment) =>
         {
             let hour = assignment.data.availableAt!.getHours();
             if (!acc[hour])
             {
-                acc[hour] = [];
+                let forecastGroup: WaniKani.ForecastGroup = {
+                    period: assignment.data.availableAt!.toLocaleString('en-US', { hour: 'numeric', hour12: true }),
+                    reviews: [],
+                    cumulativeReviews: 0
+                };
+
+                acc[hour] = forecastGroup;
             }
 
-            acc[hour].push(assignment);
+            acc[hour].reviews.push(assignment);
             return acc;
         }, {});
+
+        //Sort by forecastGroups by date, then update cumulativeReviews property
+        let forecast = sortAndPopulateForecasts(forecastGroups);
 
         return forecast;
     });
@@ -122,20 +131,50 @@ export const useSummaryStore = defineStore('summary', () =>
         let weeksAssignments = upcomingAssignments.value.filter(assignment => assignment.data.availableAt
             && assignment.data.availableAt <= weekFromNow);
 
-        let forecast = weeksAssignments.reduce((acc: Record<string, WaniKani.WaniKaniResource<WaniKani.Assignment>[]>, assignment) =>
+        let forecastGroups = weeksAssignments.reduce((acc: Record<string, WaniKani.ForecastGroup>, assignment) =>
         {
             let weekday = getWeekday(assignment.data.availableAt!);
             if (!acc[weekday])
             {
-                acc[weekday] = [];
+                let forecastGroup: WaniKani.ForecastGroup = {
+                    period: weekday,
+                    reviews: [],
+                    cumulativeReviews: 0
+                };
+
+                acc[weekday] = forecastGroup;
             }
 
-            acc[weekday].push(assignment);
+            acc[weekday].reviews.push(assignment);
             return acc;
         }, {});
 
+        //Sort by forecastGroups by date, then update cumulativeReviews property
+        let forecast = sortAndPopulateForecasts(forecastGroups);
+
         return forecast;
     });
+
+    function sortAndPopulateForecasts(forecastGroups: Record<number, WaniKani.ForecastGroup>)
+    {
+        return Object.values(forecastGroups).sort((a, b) =>
+        {
+            let availableAtA = a.reviews[0]?.data.availableAt?.getTime() ?? 0;
+            let availableAtB = b.reviews[0]?.data.availableAt?.getTime() ?? 0;
+
+            return availableAtA - availableAtB;
+        }).map((val, index, arr) =>
+        {
+            if (index == 0)
+            {
+                val.cumulativeReviews = val.reviews.length;
+                return val;
+            }
+
+            val.cumulativeReviews = val.reviews.length + arr[index - 1]!.cumulativeReviews;
+            return val;
+        });
+    }
 
     // Watchers  
     userStore.$subscribe((mutation, state) =>

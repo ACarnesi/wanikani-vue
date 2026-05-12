@@ -1144,4 +1144,28 @@ declare module WaniKani
          */
         previousUrl?: string;
     }
+
+    //#region Custom Types
+
+    export interface ForecastGroup
+    {
+        /**
+         * Period of time for the Forecast Group. Hour for hourly forecast, and weekday for Week forecast
+         */
+        period: string,
+
+        /**
+         * Number of cumulative reviews for the forecast up to this group's period
+         */
+        cumulativeReviews: number;
+
+        /**
+         * Reviews contained within this forecast group
+         */
+        reviews: WaniKaniResource<Assignment>[];
+    }
+
+
+    //#endregion
+
 }
