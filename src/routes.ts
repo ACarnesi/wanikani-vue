@@ -3,8 +3,8 @@ import ConnectionPage from './pages/ConnectionPage.vue';
 import SummaryPage from './pages/SummaryPage.vue';
 
 const routes = [
+    { path: '', component: ConnectionPage, alias: '/connection' },
     { path: '/home', component: SummaryPage },
-    { path: '/connection', component: ConnectionPage },
 ];
 
 const router = createRouter({

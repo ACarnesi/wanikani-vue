@@ -11,8 +11,8 @@
             </div>
             <button class="float-right" type="submit" @click.prevent="() => getUser()">Fetch User Data</button>
         </form>
-        <div v-if="store.userError" class="text-red-500">
-        Error fetching user data: {{ store.userError.message }}
+        <div v-if="userStore.userError" class="text-red-500">
+        Error fetching user data: {{ userStore.userError.message }}
         </div>
     </div>
 </template>
@@ -20,28 +20,34 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useUserStore } from '@stores/wanikani/users';
+import { useAssignmentStore } from '@stores/wanikani/assignments';
+import { useSubjectStore } from '@/stores/wanikani/subject';
 import { useRouter } from 'vue-router';
 import { STORAGE_KEY_API_TOKEN } from '@helpers/constants';
 
 const router = useRouter();
-const store = useUserStore();
+const userStore = useUserStore();
+const assignmentStore = useAssignmentStore();
+const subjectStore = useSubjectStore();
 
 let apiToken = ref(localStorage.getItem(STORAGE_KEY_API_TOKEN));
 
 async function getUser() {
     if (!apiToken.value) {
-        store.userError = new Error('API token is required');
+        userStore.userError = new Error('API token is required');
         return;
     }
 
-    let getUserResult = await store.getUser(apiToken.value);
+    let getUserResult = await userStore.getUser(apiToken.value);
 
-    console.log('getUserResult:', getUserResult);
-
-    if (getUserResult?.userError) {
-        console.error('Error fetching user data:', store.userError);
+    if (getUserResult?.userError.value) {
+        console.error('Error fetching user data:', userStore.userError);
     }
     else {
+        await Promise.all([
+            subjectStore.getSubjects(),
+            assignmentStore.getAssignments()
+        ]);
         router.push('/home');
     }
 }

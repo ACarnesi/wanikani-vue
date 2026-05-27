@@ -12,12 +12,12 @@
         </div>
         <div>
             <table>
-                <thead>
-                    <th class="">Hour</th>
-                    <th></th>
-                    <th>Reviews</th>
-                </thead>
                 <tbody>
+                    <tr>
+                        <th class="">Hour</th>
+                        <th></th>
+                        <th>Reviews</th>
+                    </tr>
                     <tr v-for="value in currentForecast">
                         <td class="text-right pr-3"><span class="text-right w-100">{{ value.period }}: </span></td>
                         <td class="pr-2" :style="`width: ${forecastType === 'day' ? 60 : 50}%`">
@@ -32,8 +32,12 @@
 </template>
 
 <style scoped>
+    input[type="radio"] + label {
+        cursor: pointer;
+    }
+    
     input[type="radio"]:checked + label {
-        color: var(--color-emerald-600)
+        color: var(--color-emerald-600);
     }
 </style>
 

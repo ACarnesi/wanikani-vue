@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia'
-import { inject, ref, computed, toValue } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { isSummary, isWaniKaniResourceWithData } from '@/@types/waniKaniTypeGuards';
 import { useWaniKaniFetchKey } from '@/@types/injectionKeys';
 import { useUserStore } from './users';
-import { useAssignment } from '@composables/assignment';
+import { useAssignmentStore } from './assignments';
 import { getWeekday } from '@/helpers/dateHelpers';
 
 export const useSummaryStore = defineStore('summary', () =>
 {
     const useWaniKaniFetch = inject(useWaniKaniFetchKey);
-    const assignmentApi = useAssignment();
+    const assignmentStore = useAssignmentStore();
     const userStore = useUserStore();
 
     const lessons = ref([] as WaniKani.LessonReview[]);
@@ -49,30 +49,15 @@ export const useSummaryStore = defineStore('summary', () =>
         var weekFromNow = new Date()
         weekFromNow.setDate(weekFromNow.getDate() + 7);
 
-        let getAssignmentsRequest: WaniKani.GetAllAssignmentsRequest = {
-            started: true,
-            availableBefore: weekFromNow, // Get assignments that will be available within the week
-        }
+        let availableAssignments = await assignmentStore.getAvailableAssignmentsForPeriod(true, null, weekFromNow);
 
-        let assignmentResponse = await assignmentApi.getAssignments(getAssignmentsRequest);
-        if (assignmentResponse === undefined)
-        {
-            summaryError.value = new Error('Failed to fetch assignments for summary.');
-            return { lessons, reviews, nextReviews, summaryError };
-        }
-        else if (assignmentResponse.getAssignmentsError)
-        {
-            summaryError.value = assignmentResponse.getAssignmentsError;
-            return { lessons, reviews, nextReviews, summaryError };
-        }
-
-        upcomingAssignments.value = assignmentResponse.assignments;
+        upcomingAssignments.value = availableAssignments;
     }
 
     function clearSummary()
     {
-        lessons.value = {} as WaniKani.LessonReview[];
-        reviews.value = {} as WaniKani.LessonReview[];
+        lessons.value = [] as WaniKani.LessonReview[];
+        reviews.value = [] as WaniKani.LessonReview[];
         nextReviews.value = null;
         upcomingAssignments.value = [] as WaniKani.WaniKaniResource<WaniKani.Assignment>[];
     }
@@ -86,10 +71,6 @@ export const useSummaryStore = defineStore('summary', () =>
 
         var dayFromNow = new Date()
         dayFromNow.setDate(dayFromNow.getDate() + 1);
-        console.log('Upcoming assignments:', toValue(upcomingAssignments));
-
-        console.log(upcomingAssignments.value[0]?.data.availableAt);
-        console.log(dayFromNow);
 
         let daysAssignments = upcomingAssignments.value.filter(assignment => assignment.data.availableAt
             && assignment.data.availableAt <= dayFromNow);
@@ -179,16 +160,29 @@ export const useSummaryStore = defineStore('summary', () =>
     // Watchers  
     userStore.$subscribe((mutation, state) =>
     {
-        console.log('User store changed:', mutation, state);
         if (mutation.storeId === 'user')
         {
-            if (state.user.id)
+            let isUserChanged = false;
+            if (Array.isArray(mutation.events))
             {
-                getSummary();
+                let userDetailsEvent = mutation.events.find(event => event.key === 'userDetails');
+                isUserChanged = userDetailsEvent?.oldValue.id !== userDetailsEvent?.newValue?.id;
             }
-            else
+            else if (mutation.events.key === 'userDetails')
+            {
+                let userDetailsEvent = mutation.events;
+                isUserChanged = userDetailsEvent?.oldValue.id !== userDetailsEvent?.newValue?.id;
+            }
+
+            if (isUserChanged)
             {
                 clearSummary();
+
+                //only get a new summary if a valid new user is set
+                if (state.user.userDetails?.id)
+                {
+                    getSummary();
+                }
             }
         }
     });

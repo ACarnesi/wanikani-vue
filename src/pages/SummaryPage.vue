@@ -8,6 +8,9 @@
             </div>
             <ReviewForecast></ReviewForecast>
         </div>
+        <div class="bg-gray-700 mx-9 mb-9 rounded-xl border-gray-900">
+            <LevelProgression></LevelProgression>
+        </div>
     </div>
 </template>
 
@@ -17,6 +20,7 @@ import Lessons from '@/components/Lessons.vue';
 import NavBar from '@/components/NavBar.vue';
 import ReviewForecast from '@/components/ReviewForecast.vue';
 import Reviews from '@/components/Reviews.vue';
+import LevelProgression from '@/components/LevelProgression.vue';
 
 const summaryStore = useSummaryStore();
 summaryStore.getSummary();

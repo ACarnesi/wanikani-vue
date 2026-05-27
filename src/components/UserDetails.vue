@@ -1,15 +1,15 @@
 <template>
       <div>
         <h2 class="text-2xl font-bold mb-4">User Information</h2>
-        <div v-if="store.user.level">
+        <div v-if="store.user.userDetails?.data.level">
           <div v-if="store.userError" class="text-red-500">
             Error fetching user data: {{ store.userError.message }}
           </div>
-          <div v-else-if="store.user != null" class="bg-gray-800 p-4 rounded-lg">
-            <p><strong>Username:</strong> {{ store.user.username }}</p>
-            <p><strong>Level:</strong> {{ store.user.level }}</p>
-            <p><strong>Profile URL:</strong> <a :href="store.user.profileUrl" class="text-blue-400">{{ store.user.profileUrl }}</a></p>
-            
+          <div v-else-if="store.user.userDetails?.data != null" class="bg-gray-800 p-4 rounded-lg">
+            <p><strong>Username:</strong> {{ store.user.userDetails.data.username }}</p>
+            <p><strong>Level:</strong> {{ store.user.userDetails.data.level }}</p>
+            <p><strong>Profile URL:</strong> <a :href="store.user.userDetails.data.profileUrl" class="text-blue-400">{{ store.user.userDetails.data.profileUrl }}</a></p>
+
             <button type="submit" @click.prevent="() => clearUser()">Clear User Data</button>
           </div>
         </div>

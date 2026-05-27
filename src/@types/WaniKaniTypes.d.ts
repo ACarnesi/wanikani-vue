@@ -1,5 +1,6 @@
 declare module WaniKani
 {
+    import { type DBSchema } from "idb";
 
     /**
      * Assignments contain information about a user's progress on a particular subject.
@@ -1165,6 +1166,36 @@ declare module WaniKani
         reviews: WaniKaniResource<Assignment>[];
     }
 
+    export interface SubjectStore 
+    {
+        /** Collection of Subjects with their Id's as the keys for easy retrieval and modification */
+        data: Record<number, WaniKaniResource<Subject>>;
+    }
+
+    export interface UserStore 
+    {
+        subjectsLastUpdated: Date | null;
+        assignmentsLastUpdated: Date | null;
+        userDetails: WaniKani.WaniKaniResource<WaniKani.User> | null;
+    }
+
+    export interface WaniKaniDBSchema extends DBSchema
+    {
+        'assignments': {
+            key: number;
+            value: WaniKani.WaniKaniResource<WaniKani.Assignment>;
+            indexes: { 'available-at': Date, 'subject-id': number };
+        }
+        'subjects': {
+            key: number;
+            value: WaniKani.WaniKaniResource<WaniKani.Subject>;
+            indexes: { 'level': number };
+        }
+        'user': {
+            key: string;
+            value: UserStore;
+        }
+    }
 
     //#endregion
 

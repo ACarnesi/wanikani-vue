@@ -8,7 +8,8 @@ import router from './routes';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import createWaniKaniFetch from './helpers/createWaniKaniFetch';
-import { useWaniKaniFetchKey } from './@types/injectionKeys';
+import { initializeDB } from '@helpers/indexedDbHelper';
+import { useWaniKaniFetchKey, useWaniKaniDbKey } from './@types/injectionKeys';
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -28,7 +29,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const analytics = getAnalytics(firebaseApp);
-const useWaniKaniFetch = createWaniKaniFetch(analytics);
+
+let waniKaniDB = await initializeDB('wanikaniDB');
+
+const useWaniKaniFetch = createWaniKaniFetch(analytics, waniKaniDB);
 
 const pinia = createPinia()
 const app = createApp(App);
@@ -39,6 +43,8 @@ app.use(router);
 router.push('/connection');
 
 app.provide(useWaniKaniFetchKey, useWaniKaniFetch);
+
+app.provide(useWaniKaniDbKey, waniKaniDB);
 
 app.use(pinia)
 app.mount('#app')

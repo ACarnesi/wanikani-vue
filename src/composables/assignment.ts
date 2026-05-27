@@ -8,10 +8,10 @@ export function useAssignment()
 {
     const useWaniKaniFetch = inject(useWaniKaniFetchKey);
 
-    async function getAssignments(request: WaniKani.GetAllAssignmentsRequest = {})
+    async function getAssignments(request: WaniKani.GetAllAssignmentsRequest = {}, nextPage: string | null = null)
     {
         let getAssignmentsError: Error | null = null;
-        let assignments = [] as WaniKani.WaniKaniResource<WaniKani.Assignment>[];
+        let assignments = {} as WaniKani.WaniKaniCollection<WaniKani.Assignment>;
 
         if (!useWaniKaniFetch)
         {
@@ -19,7 +19,9 @@ export function useAssignment()
             return { assignments, getAssignmentsError }
         }
 
-        let { data, error } = await useWaniKaniFetch('assignments' + requestObjectToQuery(request)).get().json();
+        let url = nextPage ?? 'assignments' + requestObjectToQuery(request);
+
+        let { data, error } = await useWaniKaniFetch(url).get().json();
 
         if (error.value)
         {
@@ -34,7 +36,9 @@ export function useAssignment()
             return { assignments, getAssignmentsError };
         }
 
-        return { assignments: data.value.data, getAssignmentsError };
+        assignments = data.value;
+
+        return { assignments, getAssignmentsError };
     }
 
     return { getAssignments };

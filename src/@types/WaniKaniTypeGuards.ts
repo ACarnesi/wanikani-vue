@@ -1,6 +1,8 @@
 // type guard helpers for WaniKani API models
 // Type guard structure generated using GitHub agent and based off of pattern found at https://dev.to/noriste/keeping-typescript-type-guards-safe-and-up-to-date-a-simpler-solution-ja3
 
+import { dateRegex } from "@/helpers/dateHelpers";
+
 export const isPlainObject = (obj: unknown): obj is Record<PropertyKey, unknown> =>
 {
     return typeof obj === 'object' && !Array.isArray(obj) && obj !== null;
@@ -10,7 +12,7 @@ export function isDate(value: unknown): value is Date
 {
     let date = value;
 
-    if (isString(date))
+    if (isString(date) && dateRegex.test(date))
     {
         date = new Date(date);
     }
@@ -36,6 +38,14 @@ function isBoolean(value: unknown): value is boolean
 function isArray<T>(value: unknown, elementGuard: (el: unknown) => el is T): value is T[]
 {
     return Array.isArray(value) && value.every(elementGuard);
+}
+
+function isRecord<T>(value: unknown, elementGuard: (el: unknown) => el is T): value is Record<string, T>
+{
+    return isPlainObject(value) && Object.entries(value).every((key, value) =>
+    {
+        return isNumber(key) && elementGuard(value);
+    });
 }
 
 // Core primitive checks
@@ -666,7 +676,22 @@ export function isWaniKaniCollectionWithData<T>(value: unknown, dataGuard: (payl
 
     // @ts-expect-error: turn off "obj is declared but never used."
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const obj: WaniKani.WaniKaniCollection<T> = { object, url, totalCount, data, pages };
+    const obj: WaniKani.WaniKaniCollection<T> = { object, url, dateUpdatedAt, totalCount, data, pages };
+
+    return true;
+}
+
+export function isSubjectStore(value: unknown): value is WaniKani.SubjectStore
+{
+    if (!isPlainObject(value)) return false;
+    const { dateLastUpdated, data } = value;
+
+    if (!(dateLastUpdated === undefined || dateLastUpdated === null || isDate(dateLastUpdated))) return false;
+    if (!isRecord(data, (item) => isWaniKaniResourceWithData(item, isSubject))) return false;
+
+    // @ts-expect-error: turn off "obj is declared but never used."
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const obj: WaniKani.SubjectStore = { dateLastUpdated, data };
 
     return true;
 }

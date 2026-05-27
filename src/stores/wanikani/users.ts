@@ -1,23 +1,42 @@
 import { defineStore } from 'pinia'
-import { ref, inject, computed } from 'vue'
+import { ref, inject, computed, toRaw } from 'vue'
 import { isUser, isWaniKaniResourceWithData } from '@/@types/waniKaniTypeGuards';
-import { useWaniKaniFetchKey } from '@/@types/injectionKeys';
-import { STORAGE_KEY_API_TOKEN } from '@/helpers/constants';
-import { useRouter } from 'vue-router'
+import { useWaniKaniDbKey, useWaniKaniFetchKey } from '@/@types/injectionKeys';
+import { STORAGE_KEY_API_TOKEN, USER_KEY } from '@/helpers/constants';
+import type { IDBPTransaction } from 'idb/build/entry.js';
 
 
 export const useUserStore = defineStore('user', () =>
 {
-    let user = ref({} as WaniKani.User);
+    let user = ref({} as WaniKani.UserStore);
     let userError = ref(null as Error | null);
 
-    const router = useRouter();
     const useWaniKaniFetch = inject(useWaniKaniFetchKey);
+    const waniKaniDb = inject(useWaniKaniDbKey);
 
-    const isLoggedIn = computed(() => !!user.value.id);
+    const isLoggedIn = computed(() => !!user.value.userDetails?.id);
 
     async function getUser(apiKey: string | null = null)
     {
+        if (!waniKaniDb)
+        {
+            userError.value = new Error('WaniKani database not available. Make sure it is provided in the app context.');
+            return { user, userError };
+        }
+
+        await waniKaniDb.get('user', USER_KEY).then(dbUser =>
+        {
+            if (dbUser)
+            {
+                user.value = dbUser as WaniKani.UserStore;
+            }
+        });
+
+        if (user.value.userDetails)
+        {
+            return { user, userError };
+        }
+
         if (!useWaniKaniFetch)
         {
             userError.value = new Error('WaniKani fetch function not available. Make sure it is provided in the app context.');
@@ -53,14 +72,41 @@ export const useUserStore = defineStore('user', () =>
             return { user, userError };
         }
 
-        user.value = data.value.data as WaniKani.User;
+        user.value.userDetails = data.value as WaniKani.WaniKaniResource<WaniKani.User>;
+        await waniKaniDb.put('user', toRaw(user.value), USER_KEY);
     }
 
     function clearUser()
     {
         localStorage.removeItem(STORAGE_KEY_API_TOKEN);
-        user.value = {} as WaniKani.User;
+        user.value = {} as WaniKani.UserStore;
     }
 
-    return { user, userError, isLoggedIn, getUser, clearUser };
+    async function setSubjectsLastUpdated(date: Date, tx?: IDBPTransaction<WaniKani.WaniKaniDBSchema, string[], "readwrite">)
+    {
+        user.value.subjectsLastUpdated = date;
+        if (tx)
+        {
+            await tx.objectStore('user').put(toRaw(user.value), USER_KEY);
+        }
+        else
+        {
+            await waniKaniDb?.put('user', toRaw(user.value), USER_KEY);
+        }
+    }
+
+    async function setAssignmentsLastUpdated(date: Date, tx?: IDBPTransaction<WaniKani.WaniKaniDBSchema, string[], "readwrite">)
+    {
+        user.value.assignmentsLastUpdated = date;
+        if (tx)
+        {
+            await tx.objectStore('user').put(toRaw(user.value), USER_KEY);
+        }
+        else
+        {
+            await waniKaniDb?.put('user', toRaw(user.value), USER_KEY);
+        }
+    }
+
+    return { user, userError, isLoggedIn, getUser, clearUser, setSubjectsLastUpdated, setAssignmentsLastUpdated };
 });
