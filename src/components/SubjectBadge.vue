@@ -1,9 +1,9 @@
 <template>
     <div :style="badgeStyle " class="w-fit h-fit border rounded-md m-1 text-">
-        <button>{{ props.subject.characters }}</button>
-        <div class="flex flex-row justify-between p-0.5">
-            <div v-for="index in 6" :key="index" :class="`level-progress ${props.assignment.srsStage >= index ? 'passed' : ''}`"></div>
-        </div>
+        <button>{{ props.subject.data.characters }}</button>
+    </div>
+    <div class="flex flex-row justify-between px-1" v-if="props.assignment != null && props.assignment.data.startedAt != null">
+        <div v-for="index in 5" :key="index" :class="`level-progress ${(props.assignment?.data.passedAt != null || props.assignment?.data.srsStage >= index) ? 'passed' : ''}`"></div>
     </div>
 </template>
 
@@ -26,24 +26,27 @@
 import { computed } from 'vue';
 
 
-const props = defineProps<{ subject: WaniKani.Subject, assignment: WaniKani.Assignment }>();    
+const props = defineProps<{ 
+    subject: WaniKani.WaniKaniResource<WaniKani.Subject>, 
+    assignment: WaniKani.WaniKaniResource<WaniKani.Assignment> | undefined 
+}>();    
 
 const badgeStyle = computed(() => {
     let style = '';
-    switch (props.assignment.subjectType) {
+    switch (props.subject.object) {
         case 'radical':
-            style += 'background-color: var(--color-teal-500) ';
+            style += 'background-color: var(--color-teal-500); ';
             break;
         case 'kanji':
-            style += 'background-color: var(--color-pink-500) ';
+            style += 'background-color: var(--color-pink-500); ';
             break;
         case 'vocabulary':
         case 'kana_vocabulary':
-            style += 'background-color: var(--color-purple-500) ';
+            style += 'background-color: var(--color-purple-500); ';
             break;
     }
 
-    if (props.assignment.unlockedAt == null) {
+    if (props.assignment?.data.unlockedAt == null) {
         style += 'opacity: 0.5 ';
     }
 

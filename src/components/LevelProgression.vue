@@ -3,20 +3,20 @@
         <div class="mb-6"><span class="text-2xl">Level Progression</span></div>
         <div class="mb-3"><span class="text-xl">Radicals</span></div>
         <div class="mb-6 flex flex-row flex-wrap">
-            <div v-for="a in radicalAssignments">
-                <SubjectBadge :subject="subjectsForLevel.find(s => s.id === a.data.subjectId)!.data" :assignment="a.data" />
+            <div v-for="r in radicals" :key="r.subject.id">
+                <SubjectBadge :subject="r.subject" :assignment="r.assignment" />
             </div>  
         </div>
         <div class="mb-3"><span class="text-xl">Kanji</span></div>
         <div class="mb-6 flex flex-row flex-wrap">
-            <div v-for="a in kanjiAssignments">
-                <SubjectBadge :subject="subjectsForLevel.find(s => s.id === a.data.subjectId)!.data" :assignment="a.data" />
+            <div v-for="k in kanji" :key="k.subject.id">
+                <SubjectBadge :subject="k.subject" :assignment="k.assignment" />
             </div>  
         </div>
         <div class="mb-3"><span class="text-xl">Vocabulary</span></div>
         <div class="mb-6 flex flex-row flex-wrap">
-            <div v-for="a in vocabularyAssignments">
-                <SubjectBadge :subject="subjectsForLevel.find(s => s.id === a.data.subjectId)!.data" :assignment="a.data" />
+            <div v-for="v in vocabulary" :key="v.subject.id">
+                <SubjectBadge :subject="v.subject" :assignment="v.assignment" />
             </div>  
         </div>
     </div>
@@ -34,29 +34,70 @@ const assignmentStore = useAssignmentStore();
 const userStore = useUserStore();
 
 let displayedLevel = ref(userStore.user.userDetails?.data.level || 0);
-let subjectsForLevel = ref([] as WaniKani.WaniKaniResource<WaniKani.Subject>[]);
-let levelAssignments = ref([] as WaniKani.WaniKaniResource<WaniKani.Assignment>[]);
+
+interface SubjectAssignmentPair {
+    subject: WaniKani.WaniKaniResource<WaniKani.Subject>,
+    assignment: WaniKani.WaniKaniResource<WaniKani.Assignment> | undefined
+}
+
+let dataForLevel = ref([] as SubjectAssignmentPair[]);
 
 subjectStore.getSubjectsForLevel(displayedLevel.value).then(subjects => {
-    subjectsForLevel.value = subjects;
-
-    assignmentStore.getAssignmentsForSubjectKeys(subjectsForLevel.value.map(s => s.id!)).then(assignments => {
-        levelAssignments.value = assignments;
+    assignmentStore.getAssignmentsForSubjectKeys(subjects.map(s => s.id!)).then(assignments => {
+        dataForLevel.value = subjects.map(s => {
+            return {
+                subject: s,
+                assignment: assignments.find(a => a.data.subjectId === s.id)
+            }
+        }).sort(sortBySubjectId(true));
     });
 });
 
-const radicalAssignments = computed(() => {
-    return levelAssignments.value.filter(a => a.data.subjectType === 'radical');
+const radicals = computed(() => {
+    return dataForLevel.value.filter(s => s.subject.object === 'radical');
 });
 
-const kanjiAssignments = computed(() => {
-    return levelAssignments.value.filter(a => a.data.subjectType === 'kanji');
+const kanji = computed(() => {
+    return dataForLevel.value.filter(s => s.subject.object === 'kanji');
 });
 
-const vocabularyAssignments = computed(() => {
-    return levelAssignments.value.filter(a => a.data.subjectType === 'vocabulary' || a.data.subjectType === 'kana_vocabulary');
+const vocabulary = computed(() => {
+    return dataForLevel.value.filter(data => data.subject.object === 'vocabulary' || data.subject.object === 'kana_vocabulary');
 });
 
 //TODO Create SubjectBadge components and begin building out Level Progression UI
+function sortBySubjectId(ascending: boolean) {
+    return function(a: SubjectAssignmentPair, b: SubjectAssignmentPair) {
+        let aVal = a.assignment?.data.subjectId ?? null; 
+        let bVal = b.assignment?.data.subjectId ?? null;
+        
+        if (aVal === bVal) {
+            return 0;
+        }
+
+        // nulls sort after anything else
+        if (aVal === null) {
+            return 1;
+        }
+        if (bVal === null) {
+            return -1;
+        }
+
+        if (a.assignment?.data.startedAt != null && b.assignment?.data.startedAt == null) {
+            return -1;
+        }
+        else if (a.assignment?.data.startedAt == null && b.assignment?.data.startedAt != null) {
+            return 1;
+        }
+
+        // otherwise, if we're ascending, lowest sorts first
+        if (ascending) {
+            return aVal < bVal ? -1 : 1;
+        }
+
+        // if descending, highest sorts first
+        return aVal < bVal ? 1 : -1;
+    }
+}
 
 </script>
