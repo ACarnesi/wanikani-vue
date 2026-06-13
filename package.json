@@ -10,6 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
     "@tailwindcss/vite": "^4.2.1",
     "@vueuse/core": "^14.2.1",
     "camelcase-keys-deep": "^0.1.0",

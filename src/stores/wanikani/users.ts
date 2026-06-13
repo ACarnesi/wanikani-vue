@@ -24,6 +24,7 @@ export const useUserStore = defineStore('user', () =>
             return { user, userError };
         }
 
+        //TODO Question: Do we even want to store user data in the IDb? We need to pull data regularly regardless for settings changes and level progression
         await waniKaniDb.get('user', USER_KEY).then(dbUser =>
         {
             if (dbUser)
@@ -32,10 +33,11 @@ export const useUserStore = defineStore('user', () =>
             }
         });
 
-        if (user.value.userDetails)
-        {
-            return { user, userError };
-        }
+        //Temporarily disabled to allow pulling new user data while determining above TODO question
+        // if (user.value.userDetails)
+        // {
+        //     return { user, userError };
+        // }
 
         if (!useWaniKaniFetch)
         {

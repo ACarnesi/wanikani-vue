@@ -65,5 +65,16 @@ export const useSubjectStore = defineStore('subject', () =>
         return subjectsForLevel as WaniKani.WaniKaniResource<WaniKani.Subject>[];
     }
 
-    return { subjectError, getSubjects, getSubjectsForLevel };
+    async function getSubjectsForIds(subjectIds: number[])
+    {
+        if (subjectIds.length == 0)
+            return [];
+
+        let tx = waniKaniDB?.transaction('subjects', 'readonly').store;
+        let subjectsForIds = await tx?.getAll(subjectIds);
+
+        return subjectsForIds as WaniKani.WaniKaniResource<WaniKani.Subject>[];
+    }
+
+    return { subjectError, getSubjects, getSubjectsForLevel, getSubjectsForIds };
 });
