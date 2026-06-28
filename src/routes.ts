@@ -8,9 +8,12 @@ const routes = [
     { path: '', component: ConnectionPage, alias: '/connection' },
     { path: '/home', component: SummaryPage },
     {
-        path: '/lessons/:isLesson',
+        path: '/lessons/',
         component: LessonsPage,
-        props: (route: RouteLocationNormalized) => ({ isLesson: (String(route.params.isLesson).toLowerCase() === 'true') })
+        props: (route: RouteLocationNormalized) => ({
+            isLesson: (String(route.query.isLesson).toLowerCase() === 'true'),
+            advancedLessonSelection: (String(route.query.advancedLessonSelection).toLowerCase() === 'true')
+        })
     },
 ];
 

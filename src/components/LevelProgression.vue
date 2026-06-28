@@ -1,9 +1,14 @@
 <template>
     <div class="m-6 p-6 border-purple-500 border-2 rounded-xl h-fit">
         <div class="mb-3 flex justify-between">
-            <span class="text-2xl">Level Progression</span>
-            <span class="text-2xl">{{ `Level: ${displayedLevel}` }}</span>
-            <span class="text-lg">({{ gurudKanji }} / {{ kanjiGurudToLevel }}) Kanji Guru'd to Level</span>
+            <span class="text-2xl self-center">Level Progression</span>
+            <div class="flex">
+                <ArrowLeftIcon class="hover:stroke-purple-500 m-3 w-6 h-6 cursor-pointer" @click="changeLevel(-1)" />
+                <span class="self-center text-2xl">{{ `Level: ${displayedLevel}` }}</span>
+                <ArrowRightIcon class="hover:stroke-purple-500 m-3 w-6 h-6 cursor-pointer" @click="changeLevel(1)" />
+            </div>
+            <span class="text-lg self-center">({{ gurudKanji }} / {{ kanjiGurudToLevel }}) Kanji
+                Guru'd to Level</span>
         </div>
         <div id="level-progress-bar" class="flex flex-row justify-between px-1 mb-3">
             <div v-for="index in kanjiGurudToLevel" :key="index" class="border h-6 w-full mx-0.5"
@@ -48,10 +53,12 @@
 </style>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useSubjectStore } from '@/stores/wanikani/subject';
 import { useAssignmentStore } from '@stores/wanikani/assignments';
 import { useUserStore } from '@stores/wanikani/users';
+import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/vue/24/outline';
+import { sortBySubjectId } from '@/helpers/waniKaniHelpers.ts';
 import SubjectBadge from './SubjectBadge.vue';
 
 const subjectStore = useSubjectStore();
@@ -61,27 +68,31 @@ const userStore = useUserStore();
 let displayedLevel = ref(userStore.user.userDetails?.data.level || 0);
 let showVocabulary = ref(false);
 
-interface SubjectAssignmentPair
-{
-    subject: WaniKani.WaniKaniResource<WaniKani.Subject>,
-    assignment: WaniKani.WaniKaniResource<WaniKani.Assignment> | undefined
-}
+let dataForLevel = ref([] as WaniKani.SubjectAssignmentPair[]);
 
-let dataForLevel = ref([] as SubjectAssignmentPair[]);
-
-subjectStore.getSubjectsForLevel(displayedLevel.value).then(subjects =>
-{
-    assignmentStore.getAssignmentsForSubjectKeys(subjects.map(s => s.id!)).then(assignments =>
+watch(
+    displayedLevel,
+    (newValue, oldValue) =>
     {
-        dataForLevel.value = subjects.map(s =>
+        subjectStore.getSubjectsForLevel(displayedLevel.value).then(subjects =>
         {
-            return {
-                subject: s,
-                assignment: assignments.find(a => a.data.subjectId === s.id)
-            }
-        }).sort(sortBySubjectId(true));
-    });
-});
+            let relevantSubjects = subjects.filter(sub => sub.data.hiddenAt == null);
+            assignmentStore.getAssignmentsForSubjectKeys(relevantSubjects.map(s => s.id!)).then(assignments =>
+            {
+                dataForLevel.value = relevantSubjects.map(s =>
+                {
+                    return {
+                        subject: s,
+                        assignment: assignments.find(a => a.data.subjectId === s.id)
+                    }
+                }).sort(sortBySubjectId(true));
+            });
+        });
+    },
+    { immediate: true }
+);
+
+const levelPassed = computed(() => { return (gurudKanji.value / kanjiGurudToLevel.value) > 1 })
 
 const radicals = computed(() =>
 {
@@ -124,47 +135,9 @@ function toggleVocabulary()
     showVocabulary.value = !showVocabulary.value;
 }
 
-//TODO Create SubjectBadge components and begin building out Level Progression UI
-function sortBySubjectId(ascending: boolean)
+function changeLevel(levelDelta: number)
 {
-    return function (a: SubjectAssignmentPair, b: SubjectAssignmentPair)
-    {
-        let aVal = a.assignment?.data.subjectId ?? null;
-        let bVal = b.assignment?.data.subjectId ?? null;
-
-        if (aVal === bVal)
-        {
-            return 0;
-        }
-
-        // nulls sort after anything else
-        if (aVal === null)
-        {
-            return 1;
-        }
-        if (bVal === null)
-        {
-            return -1;
-        }
-
-        if (a.assignment?.data.startedAt != null && b.assignment?.data.startedAt == null)
-        {
-            return -1;
-        }
-        else if (a.assignment?.data.startedAt == null && b.assignment?.data.startedAt != null)
-        {
-            return 1;
-        }
-
-        // otherwise, if we're ascending, lowest sorts first
-        if (ascending)
-        {
-            return aVal < bVal ? -1 : 1;
-        }
-
-        // if descending, highest sorts first
-        return aVal < bVal ? 1 : -1;
-    }
+    displayedLevel.value += levelDelta;
 }
 
 </script>

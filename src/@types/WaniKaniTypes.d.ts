@@ -1146,6 +1146,9 @@ declare module WaniKani
         previousUrl?: string;
     }
 
+    //***************************
+    // 
+    //
     //#region Custom Types
 
     export interface ForecastGroup
@@ -1195,6 +1198,12 @@ declare module WaniKani
             key: string;
             value: UserStore;
         }
+    }
+
+    export interface SubjectAssignmentPair
+    {
+        subject: WaniKani.WaniKaniResource<WaniKani.Subject>,
+        assignment: WaniKani.WaniKaniResource<WaniKani.Assignment> | undefined
     }
 
     //#endregion
