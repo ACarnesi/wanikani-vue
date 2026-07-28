@@ -38,6 +38,9 @@ importers:
       vue-router:
         specifier: ^5.0.6
         version: 5.0.6(@vue/compiler-sfc@3.5.29)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.29(typescript@5.9.3)))(vue@3.5.29(typescript@5.9.3))
+      wanakana:
+        specifier: ^5.3.1
+        version: 5.3.1
     devDependencies:
       '@testing-library/vue':
         specifier: ^8.1.0
@@ -1907,6 +1910,10 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  wanakana@5.3.1:
+    resolution: {integrity: sha512-OSDqupzTlzl2LGyqTdhcXcl6ezMiFhcUwLBP8YKaBIbMYW1wAwDvupw2T9G9oVaKT9RmaSpyTXjxddFPUcFFIw==}
+    engines: {node: '>=12'}
 
   web-vitals@4.2.4:
     resolution: {integrity: sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==}
@@ -3843,6 +3850,8 @@ snapshots:
       '@vue/shared': 3.5.29
     optionalDependencies:
       typescript: 5.9.3
+
+  wanakana@5.3.1: {}
 
   web-vitals@4.2.4: {}
 

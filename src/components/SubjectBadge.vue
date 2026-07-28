@@ -1,15 +1,16 @@
 <template>
     <div>
+        <!-- TODO: Add link on click to subject details  -->
         <div :style="badgeStyle" class="w-fit h-fit border rounded-md m-1">
             <button class="badge-button">
-                <span v-if="!useCharacterImage">{{ props.subject.data.characters }}</span>
+                <span v-if="!useCharacterImage" lang="ja">{{ props.subject.data.characters }}</span>
                 <img v-else class="py-1.5" :src="characterImageData?.url" height="32" width="24">
             </button>
         </div>
         <div class="flex flex-row justify-between px-1"
             v-if="props.assignment != null && props.assignment.data.startedAt != null">
             <div v-for="index in 5" :key="index"
-                :class="`level-progress border-[.5px] w-full mx-[1px] ${(props.assignment?.data.passedAt != null || props.assignment?.data.srsStage >= index) ? 'passed' : ''}`">
+                :class="`level-progress border-[.5px] w-full mx-px ${(props.assignment?.data.passedAt != null || props.assignment?.data.srsStage >= index) ? 'passed' : ''}`">
             </div>
         </div>
     </div>
@@ -53,7 +54,7 @@ import { computed } from 'vue';
 
 const props = defineProps<{
     subject: WaniKani.WaniKaniResource<WaniKani.Subject>,
-    assignment: WaniKani.WaniKaniResource<WaniKani.Assignment> | undefined
+    assignment?: WaniKani.WaniKaniResource<WaniKani.Assignment>
 }>();
 
 //TODO when adding themes, update image styling to re-color appropriately
@@ -79,7 +80,7 @@ const badgeStyle = computed(() =>
     switch (props.subject.object)
     {
         case 'radical':
-            style += 'background-color: var(--color-teal-500); ';
+            style += 'background-color: var(--color-radical-primary); ';
             break;
         case 'kanji':
             style += 'background-color: var(--color-pink-500); ';
@@ -90,7 +91,7 @@ const badgeStyle = computed(() =>
             break;
     }
 
-    if (props.assignment?.data.unlockedAt == null)
+    if (props.assignment && props.assignment?.data.unlockedAt == null)
     {
         style += 'opacity: 0.5 ';
     }

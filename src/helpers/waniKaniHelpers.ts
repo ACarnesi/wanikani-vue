@@ -2,8 +2,8 @@ export function sortBySubjectId(ascending: boolean)
 {
     return function (a: WaniKani.SubjectAssignmentPair, b: WaniKani.SubjectAssignmentPair)
     {
-        let aVal = a.assignment?.data.subjectId ?? null;
-        let bVal = b.assignment?.data.subjectId ?? null;
+        let aVal = a.subject?.data.lessonPosition ?? null;
+        let bVal = b.subject?.data.lessonPosition ?? null;
 
         if (aVal === bVal)
         {
