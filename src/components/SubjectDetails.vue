@@ -11,7 +11,7 @@
             <ArrowRightIcon class="hover:stroke-purple-500 m-3 w-6 h-6 cursor-pointer" @click="nextTab()" />
         </div>
         <div>
-            <!-- TODO: Add user based notes and synonyms functionality -->
+            <!-- TODO: Add user based notes and synonyms edit functionality -->
             <div v-show="!displayAsTabs || (displayAsTabs && tabIndex === 0)">
                 <!-- RADICAL -->
                 <div v-if="isRadical(subject.data)" class="m-6">
@@ -19,6 +19,17 @@
                     <hr>
                     <div class="m-3">
                         <WaniKaniText :text="subject.data.meaningMnemonic"></WaniKaniText>
+                    </div>
+                    <div class="text-xl mt-6 mb-3">User Notes</div>
+                    <hr>
+                    <div class="m-3">
+                        <WaniKaniText :text="studyMaterial?.data.meaningNote ?? 'Add Note'"></WaniKaniText>
+                    </div>
+                    <div class="text-xl mt-6 mb-3">User Synonyms</div>
+                    <hr>
+                    <div class="m-3">
+                        <WaniKaniText :text="studyMaterial?.data.meaningSynonyms.join(', ') ?? 'Add Synonym'">
+                        </WaniKaniText>
                     </div>
                 </div>
 
@@ -29,8 +40,8 @@
                     <div class="m-3">
                         <div class="m-3">This kanji is composed of the following radicals:</div>
                         <div class="flex">
-                            <div v-for="sub in componentSubjects" :key="sub.id">
-                                <SubjectBadge :subject="sub" />
+                            <div v-for="sub in componentSubjects" :key="sub.id" class="mx-3 flex flex-col">
+                                <SubjectBadge :subject="sub" class="self-center" />
                                 <div class="text-center">{{sub.data.meanings.find(s => s.primary)?.meaning}}</div>
                             </div>
                         </div>
@@ -44,8 +55,8 @@
                     <div class="m-3">
                         <div class="m-3">This vocabulary is composed of the following kanji:</div>
                         <div class="flex">
-                            <div v-for="sub in componentSubjects" :key="sub.id">
-                                <SubjectBadge :subject="sub" />
+                            <div v-for="sub in componentSubjects" :key="sub.id" class="mx-3 flex flex-col">
+                                <SubjectBadge :subject="sub" class="self-center" />
                                 <div class="text-center">{{sub.data.meanings.find(s => s.primary)?.meaning}}</div>
                             </div>
                         </div>
@@ -61,8 +72,8 @@
                     <div class="m-3">Here are some examples of Kanji that utilize the <b>{{ primaryMeaning }}</b>
                         radical.</div>
                     <div class="flex">
-                        <div v-for="sub in amalgamationSubjects" :key="sub.id">
-                            <SubjectBadge :subject="sub" />
+                        <div v-for="sub in amalgamationSubjects" :key="sub.id" class="mx-3 flex flex-col">
+                            <SubjectBadge :subject="sub" class="self-center" />
                             <div class="text-center">{{sub.data.meanings.find(s => s.primary)?.meaning}}</div>
                         </div>
                     </div>
@@ -79,6 +90,17 @@
                                 subject.data.meaningHint
                             }}
                         </div>
+                    </div>
+                    <div class="text-xl mt-6 mb-3">User Notes</div>
+                    <hr>
+                    <div class="m-3">
+                        <WaniKaniText :text="studyMaterial?.data.meaningNote ?? 'Add Note'"></WaniKaniText>
+                    </div>
+                    <div class="text-xl mt-6 mb-3">User Synonyms</div>
+                    <hr>
+                    <div class="m-3">
+                        <WaniKaniText :text="studyMaterial?.data.meaningSynonyms.join(', ') ?? 'Add Synonym'">
+                        </WaniKaniText>
                     </div>
                 </div>
 
@@ -97,6 +119,17 @@
                         <div class="m-3">
                             <WaniKaniText :text="subject.data.meaningMnemonic"></WaniKaniText>
                         </div>
+                        <div class="text-xl mt-6 mb-3">User Notes</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="studyMaterial?.data.meaningNote ?? 'Add Note'"></WaniKaniText>
+                        </div>
+                        <div class="text-xl mt-6 mb-3">User Synonyms</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="studyMaterial?.data.meaningSynonyms.join(', ') ?? 'Add Synonym'">
+                            </WaniKaniText>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -108,17 +141,17 @@
                         <div v-if="!isInLesson || kanjiReadingType === 'onyomi'">
                             <div class="text-xl my-3">Readings ({{ kanjiReadingType }})</div>
                             <hr>
-                            <div>{{ onyomiReadings.join(', ') }}</div>
+                            <div class="my-3">{{ onyomiReadings.join(', ') }}</div>
                         </div>
                         <div v-if="!isInLesson || kanjiReadingType === 'kunyomi'">
                             <div class="text-xl my-3">Readings ({{ kanjiReadingType }})</div>
                             <hr>
-                            <div>{{ kunyomiReadings.join(', ') }}</div>
+                            <div class="my-3">{{ kunyomiReadings.join(', ') }}</div>
                         </div>
                         <div v-if="!isInLesson || kanjiReadingType === 'nanori'">
                             <div class="text-xl my-3">Readings ({{ kanjiReadingType }})</div>
                             <hr>
-                            <div>{{ nanoriReadings.join(', ') }}</div>
+                            <div class="my-3">{{ nanoriReadings.join(', ') }}</div>
                         </div>
                     </div>
                     <div>
@@ -132,6 +165,11 @@
                                 }}
                             </div>
                         </div>
+                        <div class="text-xl mt-6 mb-3">User Notes</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="studyMaterial?.data.readingNote ?? 'Add Note'"></WaniKaniText>
+                        </div>
                     </div>
                 </div>
 
@@ -141,7 +179,7 @@
                         <div>
                             <div class="text-xl my-3">Vocab Reading</div>
                             <hr>
-                            <div>{{ primaryReading?.reading }}</div>
+                            <div class="my-3">{{ primaryReading?.reading }}</div>
                             <!-- TODO: Add voice actor audio buttons -->
                         </div>
                     </div>
@@ -150,6 +188,11 @@
                         <hr>
                         <div class="m-3">
                             <WaniKaniText :text="subject.data.readingMnemonic"></WaniKaniText>
+                        </div>
+                        <div class="text-xl mt-6 mb-3">User Notes</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="studyMaterial?.data.readingNote ?? 'Add Note'"></WaniKaniText>
                         </div>
                     </div>
                 </div>
@@ -163,8 +206,8 @@
                     <div class="m-3">Here is a glimpse of vocbaulary that utilize the <b>{{ primaryMeaning }}</b>
                         kanji.</div>
                     <div class="flex">
-                        <div v-for="sub in amalgamationSubjects" :key="sub.id">
-                            <SubjectBadge :subject="sub" />
+                        <div v-for="sub in amalgamationSubjects" :key="sub.id" class="mx-3 flex flex-col">
+                            <SubjectBadge :subject="sub" class="self-center" />
                             <div class="text-center">{{sub.data.meanings.find(s => s.primary)?.meaning}}</div>
                         </div>
                     </div>
@@ -204,11 +247,12 @@
 </style>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import { isRadical, isKanji, isVocabulary, isKanjiReading } from '@/@types/waniKaniTypeGuards';
 import { useSubjectStore } from '@/stores/wanikani/subject';
+import { useStudyMaterialStore } from '@/stores/wanikani/studyMaterial';
 import SubjectBadge from '@/components/SubjectBadge.vue';
 import WaniKaniText from '@/components/WaniKaniText.vue';
-import { ref, computed, watch } from 'vue';
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
@@ -221,10 +265,12 @@ const props = defineProps<{
 const emit = defineEmits(['previousSubject', 'nextSubject']);
 
 const subjectStore = useSubjectStore();
+const studyMaterialStore = useStudyMaterialStore();
 
 const tabIndex = ref(0);
 let amalgamationSubjects = ref([] as WaniKani.WaniKaniResource<WaniKani.Subject>[]);
 let componentSubjects = ref([] as WaniKani.WaniKaniResource<WaniKani.Subject>[]);
+let studyMaterial = ref(null as WaniKani.WaniKaniResource<WaniKani.StudyMaterial> | null);
 
 const primaryMeaning = computed(() =>
 {
@@ -275,22 +321,6 @@ const nanoriReadings = computed(() =>
     return readings.value.every(r => isKanjiReading(r)) ? readings.value.filter(r => r.type === 'nanori').map(r => r.reading) : [];
 })
 
-if (isRadical(props.subject.data) || isKanji(props.subject.data))
-{
-    subjectStore.getSubjectsForIds(props.subject.data.amalgamationSubjectIds ?? []).then(subjects =>
-    {
-        amalgamationSubjects.value = subjects;
-    });
-}
-
-if (isKanji(props.subject.data) || isVocabulary(props.subject.data))
-{
-    subjectStore.getSubjectsForIds(props.subject.data.componentSubjectIds ?? []).then(subjects =>
-    {
-        componentSubjects.value = subjects;
-    });
-}
-
 const tabHeaders = computed(() =>
 {
     switch (props.subject.object)
@@ -312,9 +342,8 @@ function previousTab()
 {
     if (tabIndex.value <= 0)
     {
-        console.log('EMITING previous subject event')
         emit('previousSubject');
-        tabIndex.value = tabHeaders.value.length - 1;
+        tabIndex.value = 0;
         return;
     }
 
@@ -325,7 +354,6 @@ function nextTab()
 {
     if (tabIndex.value >= tabHeaders.value.length - 1)
     {
-        console.log('EMITING next subject event')
         emit('nextSubject');
         tabIndex.value = 0;
         return;
@@ -358,20 +386,45 @@ watch(
     () => props.displayAsTabs,
     (newValue) =>
     {
-        console.log(newValue);
         if (newValue && props.isInLesson)
         {
             window.addEventListener('keydown', keyDownEventListener)
         }
         else if (!newValue && props.isInLesson)
         {
-            console.log(newValue);
             window.removeEventListener('keydown', keyDownEventListener);
         }
     },
     { immediate: true, flush: 'post' }
 );
 
+watch(
+    () => props.subject,
+    (newValue, oldValue) =>
+    {
+        if (newValue?.id && newValue.id != oldValue?.id)
+        {
+            if (isRadical(props.subject.data) || isKanji(props.subject.data))
+            {
+                subjectStore.getSubjectsForIds(props.subject.data.amalgamationSubjectIds ?? []).then(subjects =>
+                {
+                    amalgamationSubjects.value = subjects;
+                });
+            }
+
+            if (isKanji(props.subject.data) || isVocabulary(props.subject.data))
+            {
+                subjectStore.getSubjectsForIds(props.subject.data.componentSubjectIds ?? []).then(subjects =>
+                {
+                    componentSubjects.value = subjects;
+                });
+            }
+
+            studyMaterialStore.getStudyMaterial(newValue.id).then(r => studyMaterial.value = r);
+        }
+    },
+    { immediate: true, flush: 'post' }
+);
 
 if (props.isInLesson)
 {

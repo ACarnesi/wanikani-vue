@@ -448,7 +448,7 @@ declare module WaniKani
         /**
          * Free form note related to the meaning(s) of the associated subject.
          */
-        meaningNote: string[];
+        meaningNote: string;
 
         /**
          * Free form note related to the reading(s) of the associated subject.
@@ -458,7 +458,7 @@ declare module WaniKani
         /**
          * Synonyms for the meaning of the subject. These are used as additional correct answers during reviews.
          */
-        meaningSynonyms: string;
+        meaningSynonyms: string[];
 
         /**
          * Indicates if the associated subject has been hidden, preventing it from appearing in lessons or reviews.
@@ -1179,6 +1179,7 @@ declare module WaniKani
     {
         subjectsLastUpdated: Date | null;
         assignmentsLastUpdated: Date | null;
+        studyMaterialsLastUpdated: Date | null;
         userDetails: WaniKani.WaniKaniResource<WaniKani.User> | null;
     }
 
@@ -1193,7 +1194,12 @@ declare module WaniKani
             key: number;
             value: WaniKani.WaniKaniResource<WaniKani.Subject>;
             indexes: { 'level': number };
-        }
+        },
+        'studyMaterials': {
+            key: number;
+            value: WaniKani.WaniKaniResource<WaniKani.StudyMaterial>;
+            indexes: { 'subject-id': number };
+        },
         'user': {
             key: string;
             value: UserStore;

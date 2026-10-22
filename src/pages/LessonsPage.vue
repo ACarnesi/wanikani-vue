@@ -55,7 +55,7 @@
         </div>
         <div class="flex flex-col" v-else>
             <!-- Current Subject -->
-            <div class="w-screen" :subject-type="currentSubject?.subject.object">
+            <div class="w-screen py-9" :subject-type="currentSubject?.subject.object">
                 <div class=" h-48  flex">
                     <span class="text-8xl m-auto" lang="ja">{{ currentSubject?.subject.data.characters }}</span>
                 </div>
@@ -70,9 +70,13 @@
                 <div class="bg-gray-900 w-full flex justify-center">
                     <div class="capitalize text-2xl p-2">{{ questionType }}</div>
                 </div>
-                <input id="user-reading-input" type="text" :lang="questionType === 'meaning' ? 'en' : 'ja'"
-                    class="w-full text-center text-black text-2xl p-1" @keypress.enter="checkAnswer">
-                <!-- TODO: Add second input for meanings -->
+                <input v-show="questionType === 'reading'" id="user-reading-input" type="text" lang='ja'
+                    class="w-full text-center text-black text-2xl p-1" :value="kanaNormalizedInput"
+                    :status="answerStatus" @input="handleAnswerInput" @keypress.enter="checkAnswer">
+                <input v-show="questionType === 'meaning'" id="user-meaning-input" type="text" lang='en'
+                    class="w-full text-center text-black text-2xl p-1" v-model="answerInput" :status="answerStatus"
+                    @keypress.enter="checkAnswer">
+                <div>{{ toRomaji(answerInput) }}</div>
             </div>
             <!-- In Review Buttons -->
             <div class="flex justify-center w-full my-1" v-show="isInReview">
@@ -130,22 +134,50 @@ div[subject-type="kana_vocabulary"] {
 div[disabled=true] {
     cursor: not-allowed;
 }
+
+input[status="warning"] {
+    background-color: lightsalmon;
+}
+
+input[status="incorrect"] {
+    background-color: lightcoral;
+}
+
+input[status="correct"] {
+    background-color: lightgreen;
+}
 </style>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAssignmentStore } from '@/stores/wanikani/assignments';
 import { useSummaryStore } from '@stores/wanikani/summary';
 import { useSubjectStore } from '@/stores/wanikani/subject';
+import { useStudyMaterialStore } from '@/stores/wanikani/studyMaterial';
 import { HomeIcon, EyeIcon } from '@heroicons/vue/24/outline';
-import { useRouter } from 'vue-router';
-import { sortBySubjectId } from '@/helpers/waniKaniHelpers';
+import { sortBySubjectId, getBlockedMeanings, getVisibleMeanings, getVisibleReadings } from '@/helpers/waniKaniHelpers';
+import * as responseHelpers from '@/helpers/responseHelpers';
+import
+{
+    checkImpossibleKana,
+    checkKanjiReadings,
+    checkTransliterated,
+    checkRelatedMeaningsAndReadings,
+    checkKanji,
+    checkLongDash,
+    checkVerbStartsWithTo,
+    checkSmallHiragana,
+    checkN,
+    checkKanjiDoesNotStartWithTo,
+    type AnswerCheckAction,
+    type AnswerCheckResponse,
+    type AnswerPluginCheckContext
+} from '@/helpers/answerPluginChecks';
 import SubjectBadge from '@/components/SubjectBadge.vue';
 import SubjectDetails from '@/components/SubjectDetails.vue';
-import { bind } from 'wanakana';
-
-//TODO update model used for batches to take whether the reading/meaning have yet to be answered 
-// and also contains the model that will be sent to the WaniKani API when the assignment is complete
+import { toRomaji } from 'wanakana';
+import { isKanji, isRadical, isVocabulary } from '@/@types/waniKaniTypeGuards';
 
 const props = defineProps<{
     isLesson: boolean,
@@ -156,17 +188,24 @@ const router = useRouter();
 const subjectStore = useSubjectStore();
 const summaryStore = useSummaryStore();
 const assignmentStore = useAssignmentStore();
+const studyMaterialStore = useStudyMaterialStore();
 
-let currentSubjectIndex = ref(0 as number);
 let selectedSubjectIds = ref([] as number[]);
 let isAdvancedSelection = ref(props.advancedLessonSelection);
 let isInReview = ref(!props.isLesson);
 let isDisplayDetailsOn = ref(false);
 
+let currentSubjectIndex = ref(0 as number);
+let studyMaterial = ref(null as WaniKani.WaniKaniResource<WaniKani.StudyMaterial> | null);
+let amalgamationSubjects = ref([] as WaniKani.WaniKaniResource<WaniKani.Kanji | WaniKani.Vocabulary>[]);
+let componentSubjects = ref([] as WaniKani.WaniKaniResource<WaniKani.Subject>[]);
 let subjectsAndAssignments = ref([] as ReviewProgress[]);
 let currentBatch = ref([] as ReviewProgress[]);
 let questionType = ref('meaning' as 'meaning' | 'reading');
+let answerInput = ref('');
+let inputHistory = ref('');
 let answerSubmitted = ref(false);
+let answerStatus = ref('clear' as 'clear' | 'warning' | 'correct' | 'incorrect');
 
 //Retreive either all initial lessons or reviews
 let lessonSubjectIds = props.isLesson ? summaryStore.lessons[0]?.subjectIds : summaryStore.reviews[0]?.subjectIds;
@@ -186,6 +225,8 @@ subjectStore.getSubjectsForIds(lessonSubjectIds ?? []).then(subjects =>
         }).sort(sortBySubjectId(true));
     });
 });
+
+let kanaNormalizedInput = computed(() => responseHelpers.normalizeReadingToHiragana(answerInput.value))
 
 let dataByLevel = computed(() =>
 {
@@ -222,14 +263,43 @@ let showSubjectDetails = computed(() =>
     return (props.isLesson && !isInReview.value) || (isInReview.value && isDisplayDetailsOn.value)
 })
 
+//Only use if sure the subject is not a radical
+let castedKanjiVocabSubject = computed(() =>
+{
+    return currentSubject.value?.subject.object === 'kanji'
+        ? currentSubject.value?.subject.data as WaniKani.Kanji
+        : currentSubject.value?.subject.data as WaniKani.Vocabulary
+})
+
 watch(
-    isAdvancedSelection,
-    (newValue) =>
+    () => currentSubjectIndex.value,
+    (newValue, oldValue) =>
     {
-        if (!newValue)
+        if (newValue && newValue != oldValue)
         {
-            let userReadingInputElement = document.getElementById('user-reading-input') as HTMLInputElement;
-            bind(userReadingInputElement);
+            let subject = currentSubject.value!.subject ?? null;
+            if (isRadical(subject.data) || isKanji(subject.data))
+            {
+                subjectStore.getSubjectsForIds(subject.data.amalgamationSubjectIds ?? []).then(subjects =>
+                {
+                    amalgamationSubjects.value = subjects.map(s =>
+                    {
+                        return s.object === 'kanji'
+                            ? s as WaniKani.WaniKaniResource<WaniKani.Kanji>
+                            : s as WaniKani.WaniKaniResource<WaniKani.Vocabulary>
+                    });
+                });
+            }
+
+            if (isKanji(subject.data) || isVocabulary(subject.data))
+            {
+                subjectStore.getSubjectsForIds(subject.data.componentSubjectIds ?? []).then(subjects =>
+                {
+                    componentSubjects.value = subjects;
+                });
+            }
+
+            studyMaterialStore.getStudyMaterial(newValue).then(r => studyMaterial.value = r);
         }
     },
     { immediate: true, flush: 'post' }
@@ -295,7 +365,7 @@ function getNextReviewSubject()
     let subjectForReview = currentBatch.value[index];
     currentSubjectIndex.value = index;
 
-    if (subjectForReview?.meaningAnswered)
+    if (subjectForReview?.meaningAnswered && !['radical', 'kana_vocabulary'].includes(subjectForReview.subject.object))
         questionType.value = 'reading';
     else if (subjectForReview?.readingAnswered)
         questionType.value = 'meaning';
@@ -308,40 +378,194 @@ function getNextReviewSubject()
     isDisplayDetailsOn.value = false;
 }
 
-function checkAnswer()
+function handleAnswerInput(event: InputEvent)
 {
-    console.log('answer submitted');
-
-    // If answer previously submitted, navigate to next item or finish batch and prompt for next batch if no items left
-    // Clear any exceptions or styling based on submitted answer
-    // Normalize reading/meaning (trim, convert 'n's to ん for reading question types etc.)
-    // Ensure meaning answers do not have japanese characters vice versa for reading answers
-
-    /* WaniKani sourced unicode characters, ranges, and Regular Expressions
-        const punctuationRange = '\u3000-\u303f'; // https://jrgraphix.net/r/Unicode/3000-303F
-        const fullAndHalfWidthRange = '\uff00-\uff9f'; // https://jrgraphix.net/r/Unicode/FF00-FFEF
-        const hiraganaRange = '\u3040-\u309f'; // https://jrgraphix.net/r/Unicode/3040-309F
-        const katakanaRange = '\u30a0-\u30ff'; // https://jrgraphix.net/r/Unicode/30A0-30FF
-
-        const hiraganaUnassigned = '\u3040';
-        const hiraganaDakutens = '\u3099\u309b';
-        const hiraganaHandakutens = '\u309a\u309c';
-        const katakanaDoubleHyphen = '\u30a0';
-        const katakanaInterpunct = '\u30fb';
-
-        const nonKanaPattern = new RegExp(`[^${hiraganaRange}${katakanaRange}]|[${hiraganaUnassigned}|${hiraganaDakutens}|${hiraganaHandakutens}|${katakanaDoubleHyphen}|${katakanaInterpunct}]`);
-        const kanaPatternExtended = new RegExp(`[${punctuationRange}${hiraganaRange}${katakanaRange}${fullAndHalfWidthRange}]`);
-    */
-
-    answerSubmitted.value = !answerSubmitted.value;
+    answerInput.value = (event.target as HTMLInputElement).value;
+    inputHistory.value += event.data;
 }
 
-function toggleDisplayDetails()
+function checkAnswer(): void
+{
+    let isMeaningType = questionType.value === 'meaning'
+
+    // If answer previously submitted, navigate to next item or finish batch and prompt for next batch if no items left
+    if (answerSubmitted.value)
+    {
+        //TODO: Clear any exceptions or styling based on submitted answer
+        answerSubmitted.value = false;
+        answerStatus.value = 'clear';
+        answerInput.value = '';
+        inputHistory.value = '';
+        getNextReviewSubject();
+        return;
+    }
+    // Normalize reading/meaning (trim, convert 'n's to ん for reading question types etc.)
+    // Ensure meaning answers do not have japanese characters vice versa for reading answers
+    answerInput.value = isMeaningType
+        ? responseHelpers.normalizeResponse(answerInput.value)
+        : responseHelpers.normalizeReadingResponse(kanaNormalizedInput.value);
+
+    if (!responseHelpers.questionTypeAndResponseMatch(questionType.value, answerInput.value))
+    {
+        //TODO More appropriately implement warning style and messaging
+        answerStatus.value = 'warning';
+        return;
+    }
+
+    let checkResult = isMeaningType ? checkMeaning() : checkReading();
+    let pluginCheckResult: AnswerCheckAction | null = null;
+    if (!checkResult.isAccurate && !checkResult.isBlocked)
+    {
+        pluginCheckResult = checkPluginFunctionality(checkResult, answerInput.value);
+    }
+
+    if (pluginCheckResult)
+    {
+
+    }
+
+    //TODO Add functionality for pass and fail outcomes
+
+    answerSubmitted.value = true;
+}
+
+function checkMeaning(): AnswerCheckResponse
+{
+    let retObj: AnswerCheckResponse = {
+        isAccurate: false,
+        isBlocked: false,
+        isPassing: false,
+        multipleAnswers: false,
+        matchedAnswer: null
+    }
+
+    let normalizedAnswer = responseHelpers.normalizeResponse(answerInput.value);
+    let visibleMeanings = getVisibleMeanings(currentSubject.value?.subject.data!)
+        .concat(studyMaterial.value?.data.meaningSynonyms ?? [])
+        .map(x => responseHelpers.normalizeResponse(x));
+    let blockedMeanings = getBlockedMeanings(currentSubject.value?.subject.data!)
+        .map(x => responseHelpers.normalizeResponse(x));
+    retObj.multipleAnswers = visibleMeanings.length > 1;
+
+    //check if blocked
+    let match = blockedMeanings.find(bm => responseHelpers.normalizeResponse(bm) === normalizedAnswer);
+    if (match)
+    {
+        retObj.matchedAnswer = match;
+        return retObj;
+    }
+
+    //Check if accurate
+    match = visibleMeanings.find(vm => responseHelpers.normalizeResponse(vm) === normalizedAnswer);
+    if (match)
+    {
+        retObj.isAccurate = true;
+    }
+
+    retObj.isPassing = retObj.isAccurate || checkIsPassing(normalizedAnswer, visibleMeanings)
+
+    return retObj;
+}
+
+function checkIsPassing(response: string, visibleMeanings: string[]): boolean
+{
+    let meaningsWithDigits = visibleMeanings.filter(vm => hasDigits(vm));
+    let checkAgainstDigits = hasDigits(response) && meaningsWithDigits.length > 0;
+
+    //Return false if both response and meaning have digits but none match as expected
+    if (checkAgainstDigits && !meaningsWithDigits.some(mwd => digitsMatch(response, mwd)))
+    {
+        return false;
+    }
+
+    let answerList = checkAgainstDigits ? meaningsWithDigits : visibleMeanings;
+    const tolerance = responseHelpers.getLevenshteinTolerance(response);
+    return answerList.some((answer) => responseHelpers.getLevenshteinDistance(answer, response) <= tolerance);
+}
+
+function checkReading(): AnswerCheckResponse
+{
+    let retObj: AnswerCheckResponse = {
+        isAccurate: false,
+        isBlocked: false,
+        isPassing: false,
+        multipleAnswers: false,
+        matchedAnswer: null
+    }
+
+    //We should only reach this point if the subject object is kanji or vocabulary
+    //Return false if we hit an unexpected situation
+    if (!['kanji', 'vocabulary'].includes(currentSubject.value?.subject.object!))
+    {
+        return retObj;
+    }
+
+    let castedSubject = currentSubject.value?.subject.object === 'kanji'
+        ? currentSubject.value?.subject.data as WaniKani.Kanji
+        : currentSubject.value?.subject.data as WaniKani.Vocabulary
+
+    let normalizedAnswer = responseHelpers.normalizeReadingResponse(answerInput.value);
+    let visibleReadings = getVisibleReadings(castedSubject)
+        .map(x => responseHelpers.normalizeReadingResponse(x));
+
+    retObj.multipleAnswers = visibleReadings.length > 1;
+    retObj.matchedAnswer = visibleReadings.find(vr => responseHelpers.normalizeResponse(vr) === normalizedAnswer) ?? null;
+    retObj.isAccurate = retObj.matchedAnswer !== null;
+    retObj.isPassing = retObj.isAccurate;
+
+    return retObj;
+}
+
+function checkPluginFunctionality(result: AnswerCheckResponse, normalizedAnswer: string): AnswerCheckAction | null
+{
+    const context: AnswerPluginCheckContext = {
+        questionType: questionType.value,
+        currentSubject: currentSubject.value,
+        castedKanjiVocabSubject: castedKanjiVocabSubject.value,
+        inputHistory: inputHistory.value,
+        studyMaterial: studyMaterial.value,
+        componentSubjects: componentSubjects.value,
+        amalgamationSubjects: amalgamationSubjects.value
+    };
+
+    return checkImpossibleKana(context, result, normalizedAnswer) ??
+        checkKanjiReadings(context, result, normalizedAnswer) ??
+        checkTransliterated(context, result, normalizedAnswer) ??
+        checkRelatedMeaningsAndReadings(context, result, normalizedAnswer) ??
+        checkKanji(context, result, normalizedAnswer) ??
+        checkLongDash(context, result, normalizedAnswer) ??
+        checkVerbStartsWithTo(context, result, normalizedAnswer) ??
+        checkSmallHiragana(context, result, normalizedAnswer) ??
+        checkN(context, result, normalizedAnswer) ??
+        checkKanjiDoesNotStartWithTo(context, result, normalizedAnswer);
+}
+
+function toggleDisplayDetails(): void
 {
     if (!answerSubmitted.value)
         return;
     else
         isDisplayDetailsOn.value = !isDisplayDetailsOn.value
+}
+
+function filterDigits(string: string)
+{
+    const matches = string.match(/\d+/g);
+    if (matches)
+    {
+        return matches.sort();
+    }
+    return [];
+}
+
+function hasDigits(string: string)
+{
+    return filterDigits(string).length > 0;
+}
+
+function digitsMatch(string1: string, string2: string)
+{
+    return filterDigits(string1).toString() === filterDigits(string2).toString();
 }
 
 interface LevelData
@@ -357,5 +581,6 @@ interface ReviewProgress extends WaniKani.SubjectAssignmentPair
     readingAnswered: boolean;
     reviewRequest: WaniKani.CreateReviewRequest;
 }
+
 
 </script>

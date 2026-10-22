@@ -32,7 +32,7 @@ const analytics = getAnalytics(firebaseApp);
 
 let waniKaniDB = await initializeDB('wanikaniDB');
 
-const useWaniKaniFetch = createWaniKaniFetch(analytics, waniKaniDB);
+const useWaniKaniFetch = createWaniKaniFetch(analytics);
 
 const pinia = createPinia()
 const app = createApp(App);

@@ -51,7 +51,7 @@ export const useSubjectStore = defineStore('subject', () =>
             let tx = waniKaniDB?.transaction(['subjects', 'user'], 'readwrite');
             await Promise.all([
                 updatedSubjects.map(s => tx?.objectStore('subjects').put(toRaw(s))),
-                userStore.setSubjectsLastUpdated(new Date(), tx),
+                userStore.setLastUpdated(new Date(), 'subjectsLastUpdated', tx),
                 tx!.done
             ]);
         }

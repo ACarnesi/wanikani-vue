@@ -39,3 +39,19 @@ export function sortBySubjectId(ascending: boolean)
         return aVal < bVal ? 1 : -1;
     }
 }
+
+export function getVisibleReadings(subject: WaniKani.Kanji | WaniKani.Vocabulary) 
+{
+    return subject.readings.filter(x => x.acceptedAnswer).map(x => x.reading);
+}
+
+export function getVisibleMeanings(subject: WaniKani.Subject)
+{
+    return subject.meanings.filter(x => x.acceptedAnswer).map(x => x.meaning)
+        .concat(subject.auxiliaryMeanings.filter(y => y.type === 'whitelist').map(y => y.meaning));
+}
+
+export function getBlockedMeanings(subject: WaniKani.Subject)
+{
+    return subject.auxiliaryMeanings.filter(x => x.type === 'blacklist').map(x => x.meaning);
+}

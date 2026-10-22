@@ -49,7 +49,7 @@ export const useAssignmentStore = defineStore('assignment', () =>
             let tx = waniKaniDB?.transaction(['assignments', 'user'], 'readwrite');
             await Promise.all([
                 updatedAssignments.map(a => tx?.objectStore('assignments').put(toRaw(a))),
-                userStore.setAssignmentsLastUpdated(new Date(), tx),
+                userStore.setLastUpdated(new Date(), 'assignmentsLastUpdated', tx),
                 tx!.done
             ]);
         }

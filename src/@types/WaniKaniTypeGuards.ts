@@ -369,6 +369,26 @@ export function isPronunciationAudioMetadata(value: unknown): value is WaniKani.
     return true;
 }
 
+export function isStudyMaterial(value: unknown): value is WaniKani.StudyMaterial
+{
+    if (!isPlainObject(value)) return false;
+    const { createdAt, subjectId, subjectType, meaningNote, readingNote, meaningSynonyms, hidden } = value;
+
+    if (!isDate(createdAt)) return false;
+    if (!isNumber(subjectId)) return false;
+    if (!isSubjectType(subjectType)) return false;
+    if (!isArray(meaningSynonyms, isString)) return false;
+    if (!isString(readingNote)) return false;
+    if (!isString(meaningNote)) return false;
+    if (!(hidden === undefined || hidden === null || isBoolean(hidden))) return false;
+
+    // @ts-expect-error: turn off "obj is declared but never used."
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const obj: WaniKani.StudyMaterial = { createdAt, subjectId, subjectType, meaningNote, readingNote, meaningSynonyms, hidden };
+
+    return true;
+}
+
 export function isSubject(value: unknown): value is WaniKani.Subject
 {
     if (!isPlainObject(value)) return false;

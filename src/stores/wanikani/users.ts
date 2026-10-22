@@ -84,9 +84,9 @@ export const useUserStore = defineStore('user', () =>
         user.value = {} as WaniKani.UserStore;
     }
 
-    async function setSubjectsLastUpdated(date: Date, tx?: IDBPTransaction<WaniKani.WaniKaniDBSchema, string[], "readwrite">)
+    async function setLastUpdated(date: Date, key: 'subjectsLastUpdated' | 'assignmentsLastUpdated' | 'studyMaterialsLastUpdated', tx?: IDBPTransaction<WaniKani.WaniKaniDBSchema, string[], "readwrite">)
     {
-        user.value.subjectsLastUpdated = date;
+        user.value[key] = date;
         if (tx)
         {
             await tx.objectStore('user').put(toRaw(user.value), USER_KEY);
@@ -97,18 +97,5 @@ export const useUserStore = defineStore('user', () =>
         }
     }
 
-    async function setAssignmentsLastUpdated(date: Date, tx?: IDBPTransaction<WaniKani.WaniKaniDBSchema, string[], "readwrite">)
-    {
-        user.value.assignmentsLastUpdated = date;
-        if (tx)
-        {
-            await tx.objectStore('user').put(toRaw(user.value), USER_KEY);
-        }
-        else
-        {
-            await waniKaniDb?.put('user', toRaw(user.value), USER_KEY);
-        }
-    }
-
-    return { user, userError, isLoggedIn, getUser, clearUser, setSubjectsLastUpdated, setAssignmentsLastUpdated };
+    return { user, userError, isLoggedIn, getUser, clearUser, setLastUpdated };
 });

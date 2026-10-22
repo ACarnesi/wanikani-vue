@@ -1,6 +1,6 @@
 import { openDB } from 'idb';
 
-const CURRENT_DB_VERSION = 3;
+const CURRENT_DB_VERSION = 4;
 const DB_STORES = {
     'subjects': {
         keyOptions: { keyPath: 'id' },
@@ -10,6 +10,12 @@ const DB_STORES = {
         keyOptions: { keyPath: 'id' },
         indexes: [
             { name: 'available-at', keyPath: 'data.availableAt' },
+            { name: 'subject-id', keyPath: 'data.subjectId' }
+        ]
+    },
+    'studyMaterials': {
+        keyOptions: { keyPath: 'id' },
+        indexes: [
             { name: 'subject-id', keyPath: 'data.subjectId' }
         ]
     },
