@@ -60,32 +60,34 @@
                     <span class="text-8xl m-auto" lang="ja">{{ currentSubject?.subject.data.characters }}</span>
                 </div>
                 <div class="flex">
-                    <span class="text-4xl pb-3 m-auto">{{currentSubject?.subject.data.meanings.find(m =>
-                        m.primary)?.meaning
+                    <span v-if="!isInReview" class="text-4xl pb-3 m-auto">{{
+                        currentSubject?.subject.data.meanings.find(m =>
+                            m.primary)?.meaning
                     }}</span>
                 </div>
             </div>
-            <div v-show="isInReview" class="bg-white h-fit border-y-2 border-y-gray-900">
+            <div v-show="isInReview" class="h-fit">
                 <!-- User Response -->
                 <div class="bg-gray-900 w-full flex justify-center">
                     <div class="capitalize text-2xl p-2">{{ questionType }}</div>
                 </div>
-                <input v-show="questionType === 'reading'" id="user-reading-input" type="text" lang='ja'
-                    class="w-full text-center text-black text-2xl p-1" :value="kanaNormalizedInput"
-                    :status="answerStatus" @input="handleAnswerInput" @keypress.enter="checkAnswer">
-                <input v-show="questionType === 'meaning'" id="user-meaning-input" type="text" lang='en'
-                    class="w-full text-center text-black text-2xl p-1" v-model="answerInput" :status="answerStatus"
-                    @keypress.enter="checkAnswer">
-                <div>{{ toRomaji(answerInput) }}</div>
+                <div class="bg-gray-800 m-3">
+                    <input id="user-input" type="text" :lang='inputLanguage'
+                        class="w-full text-center text-white text-2xl p-1" :class="{ 'shake': isInputShake }"
+                        :value="formattedAnswerInput" :status="answerStatus" :placeholder="inputPlaceholder"
+                        autocomplete="off" @input="handleAnswerInput" @keypress.enter="checkAnswer">
+                </div>
+                <div v-show="retryFeedback">{{ retryFeedback }}</div>
             </div>
             <!-- In Review Buttons -->
-            <div class="flex justify-center w-full my-1" v-show="isInReview">
+            <div class="flex justify-center w-full mb-1" v-show="isInReview">
                 <div class="flex justify-center w-[20%] mx-3 bg-gray-800 hover:bg-gray-700 hover:**:stroke-purple-500"
                     :disabled="!answerSubmitted" @click="toggleDisplayDetails">
                     <div class="w-6 h-6">
                         <EyeIcon />
                     </div>
                 </div>
+                <div v-show="resultFeedback">{{ resultFeedback }}</div>
             </div>
             <div v-if="currentSubject != null" class="grow flex-auto">
                 <!-- Lesson Content -->
@@ -98,6 +100,14 @@
                 <div v-for="(data, index) in Object.values(currentBatch)">
                     <SubjectBadge :class="selectedSubjectIds.includes(data.subject.id!) ? 'selected' : 'unselected'"
                         :subject="data.subject" :assignment="data.assignment" @click="updateCurrentSubject(index)" />
+                </div>
+                <div class="inline-flex items-center text-base border rounded-md m-1 px-2.5 cursor-pointer bg-green-600 hover:bg-green-500"
+                    @click="updateCurrentSubject(currentBatch.length)">
+                    <span class=" mr-1">Quiz</span>
+                    <span class="w-4 h-4">
+                        <ArrowRightIcon />
+                    </span>
+
                 </div>
             </div>
         </div>
@@ -140,11 +150,40 @@ input[status="warning"] {
 }
 
 input[status="incorrect"] {
-    background-color: lightcoral;
+    background-color: rgb(255, 93, 93);
 }
 
 input[status="correct"] {
     background-color: lightgreen;
+}
+
+.shake {
+    animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
 }
 </style>
 
@@ -155,7 +194,7 @@ import { useAssignmentStore } from '@/stores/wanikani/assignments';
 import { useSummaryStore } from '@stores/wanikani/summary';
 import { useSubjectStore } from '@/stores/wanikani/subject';
 import { useStudyMaterialStore } from '@/stores/wanikani/studyMaterial';
-import { HomeIcon, EyeIcon } from '@heroicons/vue/24/outline';
+import { HomeIcon, EyeIcon, ArrowRightIcon } from '@heroicons/vue/24/outline';
 import { sortBySubjectId, getBlockedMeanings, getVisibleMeanings, getVisibleReadings } from '@/helpers/waniKaniHelpers';
 import * as responseHelpers from '@/helpers/responseHelpers';
 import
@@ -206,6 +245,9 @@ let answerInput = ref('');
 let inputHistory = ref('');
 let answerSubmitted = ref(false);
 let answerStatus = ref('clear' as 'clear' | 'warning' | 'correct' | 'incorrect');
+let isInputShake = ref(false);
+let retryFeedback = ref(null as string | null);
+let resultFeedback = ref(null as string | null);
 
 //Retreive either all initial lessons or reviews
 let lessonSubjectIds = props.isLesson ? summaryStore.lessons[0]?.subjectIds : summaryStore.reviews[0]?.subjectIds;
@@ -223,10 +265,22 @@ subjectStore.getSubjectsForIds(lessonSubjectIds ?? []).then(subjects =>
                 meaningAnswered: false
             } as ReviewProgress;
         }).sort(sortBySubjectId(true));
+
+        if (!props.advancedLessonSelection)
+            setCurrentBatch();
     });
 });
 
-let kanaNormalizedInput = computed(() => responseHelpers.normalizeReadingToHiragana(answerInput.value))
+
+let kanaNormalizedInput = computed(() => responseHelpers.normalizeReadingToHiragana(answerInput.value));
+let formattedAnswerInput = computed(() =>
+{
+    return questionType.value === 'reading' ?
+        kanaNormalizedInput.value :
+        answerInput.value;
+});
+let inputPlaceholder = computed(() => questionType.value === 'meaning' ? 'Your Answer' : '答え');
+let inputLanguage = computed(() => questionType.value === 'meaning' ? 'en' : 'ja');
 
 let dataByLevel = computed(() =>
 {
@@ -320,18 +374,23 @@ function selectSubject(subjectId: number)
 function finalizeSelection()
 {
     subjectsAndAssignments.value = subjectsAndAssignments.value.filter(sa => selectedSubjectIds.value.includes(sa.subject.id!));
+    setCurrentBatch();
+    isAdvancedSelection.value = false;
+}
+
+function setCurrentBatch()
+{
 
     //TODO: Implement batching settings based on user preferences.
     currentBatch.value = subjectsAndAssignments.value.splice(0, 5).map(sa =>
     {
         return {
             ...sa,
-            reviewRequest: {} as WaniKani.CreateReviewRequest,
+            reviewRequest: { subjectId: sa.subject.id, assignmentId: sa.assignment?.id, incorrectMeaningAnswers: 0, incorrectReadingAnswers: 0 } as WaniKani.CreateReviewRequest,
             readingAnswered: false,
             meaningAnswered: false
         } as ReviewProgress;
     });
-    isAdvancedSelection.value = false;
 }
 
 function updateCurrentSubject(i: number)
@@ -359,15 +418,17 @@ function getNextReviewSubject()
     //Limited-Random: 
     //Select a random index from 1 to 10 (or max length of batch size if smaller) 
     //Select randomly between reading and meaning (or whichever is remaining if one is already answered)
-    let maxRange = Math.min(currentBatch.value.length - 1, 10);
+    let maxRange = Math.min(currentBatch.value.length, 10);
     let index = Math.floor(Math.random() * maxRange);
 
     let subjectForReview = currentBatch.value[index];
     currentSubjectIndex.value = index;
 
-    if (subjectForReview?.meaningAnswered && !['radical', 'kana_vocabulary'].includes(subjectForReview.subject.object))
+    let isRadicalOrKanaVocab = () => subjectForReview && ['radical', 'kana_vocabulary'].includes(subjectForReview.subject.object);
+
+    if (subjectForReview?.meaningAnswered && !isRadicalOrKanaVocab())
         questionType.value = 'reading';
-    else if (subjectForReview?.readingAnswered)
+    else if (subjectForReview?.readingAnswered || isRadicalOrKanaVocab())
         questionType.value = 'meaning';
     else
     {
@@ -378,6 +439,11 @@ function getNextReviewSubject()
     isDisplayDetailsOn.value = false;
 }
 
+function removeReviewSubjectFromBatch(index: number)
+{
+    currentBatch.value.splice(index, 1);
+}
+
 function handleAnswerInput(event: InputEvent)
 {
     answerInput.value = (event.target as HTMLInputElement).value;
@@ -386,29 +452,47 @@ function handleAnswerInput(event: InputEvent)
 
 function checkAnswer(): void
 {
+    if (answerInput.value === '')
+    {
+        shakeInput();
+        return;
+    }
+
+    retryFeedback.value = null;
     let isMeaningType = questionType.value === 'meaning'
 
     // If answer previously submitted, navigate to next item or finish batch and prompt for next batch if no items left
     if (answerSubmitted.value)
     {
-        //TODO: Clear any exceptions or styling based on submitted answer
-        answerSubmitted.value = false;
         answerStatus.value = 'clear';
         answerInput.value = '';
         inputHistory.value = '';
+        resultFeedback.value = null;
+
+        let batchSubject = currentBatch.value[currentSubjectIndex.value];
+        if (batchSubject == null)
+            return; //TODO: Report error of something strange ocurring in data
+
+        if (batchSubject.meaningAnswered && batchSubject.readingAnswered)
+        {
+            //TODO: submit reviewRequest to API
+            removeReviewSubjectFromBatch(currentSubjectIndex.value);
+        }
+
         getNextReviewSubject();
         return;
     }
+
     // Normalize reading/meaning (trim, convert 'n's to ん for reading question types etc.)
     // Ensure meaning answers do not have japanese characters vice versa for reading answers
-    answerInput.value = isMeaningType
+    let normalizedAnswer = isMeaningType
         ? responseHelpers.normalizeResponse(answerInput.value)
         : responseHelpers.normalizeReadingResponse(kanaNormalizedInput.value);
 
-    if (!responseHelpers.questionTypeAndResponseMatch(questionType.value, answerInput.value))
+    if (!responseHelpers.questionTypeAndResponseMatch(questionType.value, normalizedAnswer))
     {
-        //TODO More appropriately implement warning style and messaging
         answerStatus.value = 'warning';
+        shakeInput();
         return;
     }
 
@@ -416,17 +500,48 @@ function checkAnswer(): void
     let pluginCheckResult: AnswerCheckAction | null = null;
     if (!checkResult.isAccurate && !checkResult.isBlocked)
     {
-        pluginCheckResult = checkPluginFunctionality(checkResult, answerInput.value);
+        pluginCheckResult = checkPluginFunctionality(checkResult, normalizedAnswer);
     }
 
-    if (pluginCheckResult)
+    //Currently plugins only return a 'retry' type so no need to check others at this time
+    if (pluginCheckResult?.type === 'retry')
     {
-
+        retryFeedback.value = pluginCheckResult?.message;
+        answerStatus.value = 'warning';
+        shakeInput();
+        return;
     }
 
-    //TODO Add functionality for pass and fail outcomes
+    let batchSubject = currentBatch.value[currentSubjectIndex.value];
+    if (batchSubject == null)
+        return; //TODO: Report error of something strange ocurring in data
+
+    if (!checkResult.isPassing)
+    {
+        if (questionType.value === 'reading')
+            batchSubject.reviewRequest.incorrectReadingAnswers++;
+        else
+            batchSubject.reviewRequest.incorrectMeaningAnswers++;
+
+        answerStatus.value = 'incorrect';
+    }
+    else
+    {
+        if (questionType.value === 'reading')
+            batchSubject.readingAnswered = true;
+        else
+            batchSubject.meaningAnswered = true;
+
+        answerStatus.value = 'correct';
+    }
 
     answerSubmitted.value = true;
+}
+
+function shakeInput()
+{
+    isInputShake.value = true;
+    setTimeout(() => isInputShake.value = false, 1500);
 }
 
 function checkMeaning(): AnswerCheckResponse
@@ -504,7 +619,7 @@ function checkReading(): AnswerCheckResponse
         ? currentSubject.value?.subject.data as WaniKani.Kanji
         : currentSubject.value?.subject.data as WaniKani.Vocabulary
 
-    let normalizedAnswer = responseHelpers.normalizeReadingResponse(answerInput.value);
+    let normalizedAnswer = responseHelpers.normalizeReadingResponse(kanaNormalizedInput.value);
     let visibleReadings = getVisibleReadings(castedSubject)
         .map(x => responseHelpers.normalizeReadingResponse(x));
 

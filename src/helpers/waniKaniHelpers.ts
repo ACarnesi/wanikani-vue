@@ -42,7 +42,7 @@ export function sortBySubjectId(ascending: boolean)
 
 export function getVisibleReadings(subject: WaniKani.Kanji | WaniKani.Vocabulary) 
 {
-    return subject.readings.filter(x => x.acceptedAnswer).map(x => x.reading);
+    return subject.readings?.filter(x => x.acceptedAnswer).map(x => x.reading);
 }
 
 export function getVisibleMeanings(subject: WaniKani.Subject)

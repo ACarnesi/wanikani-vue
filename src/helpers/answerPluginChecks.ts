@@ -15,7 +15,7 @@ export interface AnswerCheckResponse
 export interface AnswerCheckAction
 {
     type: 'pass' | 'fail' | 'retry'
-    message?: string
+    message: string | null
 }
 
 export interface AnswerPluginCheckContext
@@ -90,11 +90,11 @@ export function checkKanjiReadings(context: AnswerPluginCheckContext, result: An
 //Checks if the user responded with the meaning instead of the reading or vice versa
 export function checkTransliterated(context: AnswerPluginCheckContext, result: AnswerCheckResponse, normalizedAnswer: string): AnswerCheckAction | null
 {
-    if (result.isPassing)
+    if (result.isPassing || (context.currentSubject && responseHelpers.isSubjectWithoutReadings(context.currentSubject.subject.object)))
         return null;
 
     if (context.questionType === 'meaning'
-        && getVisibleReadings(context.castedKanjiVocabSubject).some((reading) => responseHelpers.isIMEEquivalent(reading, normalizedAnswer)))
+        && getVisibleReadings(context.castedKanjiVocabSubject)?.some((reading) => responseHelpers.isIMEEquivalent(reading, normalizedAnswer)))
     {
         return {
             type: 'retry',
@@ -176,7 +176,8 @@ export function checkKanji(context: AnswerPluginCheckContext, _result: AnswerChe
     if (normalizedAnswer === context.currentSubject?.subject.data.characters)
     {
         return {
-            type: 'retry'
+            type: 'retry',
+            message: null
         }
     }
 
@@ -253,12 +254,14 @@ export function checkSmallHiragana(context: AnswerPluginCheckContext, _result: A
 export function checkN(context: AnswerPluginCheckContext, _result: AnswerCheckResponse, normalizedAnswer: string): AnswerCheckAction | null
 {
     let visibleReadings = getVisibleReadings(context.castedKanjiVocabSubject);
+    if (!visibleReadings || visibleReadings.length <= 0)
+        return null;
 
     let readingsContainingN = visibleReadings.filter((text) => text.indexOf("ん") !== -1);
     const responseMora = [responseHelpers.toRomajiMora(normalizedAnswer)]
     const hasExactMatch = responseHelpers.findMatchingIndexInArrayOfArrays(readingsContainingN.map(responseHelpers.toRomajiMora), responseMora) !== -1
 
-    if (context.questionType === 'reading' && visibleReadings.length > 0 && !hasExactMatch)
+    if (context.questionType === 'reading' && !hasExactMatch)
     {
         if (readingsContainingN.length > 0)
         {

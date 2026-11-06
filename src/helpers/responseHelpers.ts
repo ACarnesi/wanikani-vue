@@ -476,3 +476,10 @@ export function compareBigAndSmall(userResponse: string, expectedAnswer: string)
 
   return findCorrections(userResponse, expectedAnswer);
 }
+
+
+
+export function isSubjectWithoutReadings(obj: string)
+{
+  return ['radical', 'kana_vocabulary'].includes(obj);
+}

@@ -34,6 +34,8 @@ const readyToReview = computed(() =>
 
 function startReview()
 {
-    router.push('/lessons/false');
+    let query = `?isLesson=false&advancedLessonSelection=false`;
+
+    router.push(`/lessons/${query}`);
 }
 </script>
