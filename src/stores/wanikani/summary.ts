@@ -73,7 +73,8 @@ export const useSummaryStore = defineStore('summary', () =>
         dayFromNow.setDate(dayFromNow.getDate() + 1);
 
         let daysAssignments = upcomingAssignments.value.filter(assignment => assignment.data.availableAt
-            && assignment.data.availableAt <= dayFromNow);
+            && assignment.data.availableAt <= dayFromNow
+            && assignment.data.hidden !== true);
 
         let forecastGroups = daysAssignments.reduce((acc: Record<number, WaniKani.ForecastGroup>, assignment) =>
         {

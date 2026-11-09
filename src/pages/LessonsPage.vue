@@ -215,7 +215,6 @@ import
 } from '@/helpers/answerPluginChecks';
 import SubjectBadge from '@/components/SubjectBadge.vue';
 import SubjectDetails from '@/components/SubjectDetails.vue';
-import { toRomaji } from 'wanakana';
 import { isKanji, isRadical, isVocabulary } from '@/@types/waniKaniTypeGuards';
 
 const props = defineProps<{
