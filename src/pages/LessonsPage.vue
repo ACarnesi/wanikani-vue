@@ -1,8 +1,20 @@
 <template>
-    <div class="flex">
+    <div class="flex flex-col">
         <!-- Home button -->
-        <div class="float-left absolute m-3 w-6 h-6 cursor-pointer">
-            <HomeIcon class="hover:stroke-purple-500" @click="navigateHome" />
+        <div class="flex flex-row justify-between absolute w-full">
+            <div class="m-3 w-6 h-6 cursor-pointer">
+                <HomeIcon class="hover:stroke-purple-500" @click="navigateHome" />
+            </div>
+            <div class="flex m-3 align-middle justify-center">
+                <div class="mx-6 flex">
+                    <CheckCircleIcon class="w-6 h-6"/>
+                    <span class="self-center text-sm mx-1">{{ completedBatch.length }}</span>
+                </div>
+                <div class="flex">
+                    <QueueListIcon class="w-6 h-6"/>
+                    <span class="self-center text-sm mx-1">{{ currentBatch.length }}</span>
+                </div>
+            </div>
         </div>
         <div v-if="isLesson && isAdvancedSelection">
             <div class="mx-auto w-fit">
@@ -53,7 +65,7 @@
                     Lessons</button>
             </div>
         </div>
-        <div class="flex flex-col" v-else>
+        <div class="flex flex-col h-full" v-else>
             <!-- Current Subject -->
             <div class="w-screen py-9" :subject-type="currentSubject?.subject.object">
                 <div class=" h-48  flex">
@@ -77,7 +89,8 @@
                         :value="formattedAnswerInput" :status="answerStatus" :placeholder="inputPlaceholder"
                         autocomplete="off" @input="handleAnswerInput" @keypress.enter="checkAnswer">
                 </div>
-                <div v-show="retryFeedback">{{ retryFeedback }}</div>
+                <div id="retryFeedback" v-show="retryFeedback" class="m-auto w-fit mb-3 p-2 relative bg-gray-500">{{
+                    retryFeedback }}</div>
             </div>
             <!-- In Review Buttons -->
             <div class="flex justify-center w-full mb-1" v-show="isInReview">
@@ -126,6 +139,18 @@
 #begin-lessons-btn:disabled {
     opacity: 50%;
     cursor: not-allowed;
+}
+
+#retryFeedback::before {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    top: -7px;
+    left: 50%;
+    border-style: solid;
+    border-width: 0 8px 8px 8px;
+    border-color: rgba(0, 0, 0, 0) rgba(0, 0, 0, 0) var(--color-gray-500) rgba(0, 0, 0, 0);
 }
 
 div[subject-type="radical"] {
@@ -194,7 +219,7 @@ import { useAssignmentStore } from '@/stores/wanikani/assignments';
 import { useSummaryStore } from '@stores/wanikani/summary';
 import { useSubjectStore } from '@/stores/wanikani/subject';
 import { useStudyMaterialStore } from '@/stores/wanikani/studyMaterial';
-import { HomeIcon, EyeIcon, ArrowRightIcon } from '@heroicons/vue/24/outline';
+import { HomeIcon, EyeIcon, ArrowRightIcon, QueueListIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
 import { sortBySubjectId, getBlockedMeanings, getVisibleMeanings, getVisibleReadings } from '@/helpers/waniKaniHelpers';
 import * as responseHelpers from '@/helpers/responseHelpers';
 import
@@ -239,6 +264,7 @@ let amalgamationSubjects = ref([] as WaniKani.WaniKaniResource<WaniKani.Kanji | 
 let componentSubjects = ref([] as WaniKani.WaniKaniResource<WaniKani.Subject>[]);
 let subjectsAndAssignments = ref([] as ReviewProgress[]);
 let currentBatch = ref([] as ReviewProgress[]);
+let completedBatch = ref([] as ReviewProgress[]);
 let questionType = ref('meaning' as 'meaning' | 'reading');
 let answerInput = ref('');
 let inputHistory = ref('');
@@ -440,7 +466,7 @@ function getNextReviewSubject()
 
 function removeReviewSubjectFromBatch(index: number)
 {
-    currentBatch.value.splice(index, 1);
+    completedBatch.value.push(...(currentBatch.value.splice(index, 1)));
 }
 
 function handleAnswerInput(event: InputEvent)

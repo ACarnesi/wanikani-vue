@@ -12,6 +12,7 @@
         </div>
         <div>
             <!-- TODO: Add user based notes and synonyms edit functionality -->
+            <!-- TAB 1 -->
             <div v-show="!displayAsTabs || (displayAsTabs && tabIndex === 0)">
                 <!-- RADICAL -->
                 <div v-if="isRadical(subject.data)" class="m-6">
@@ -64,6 +65,7 @@
                 </div>
             </div>
 
+            <!-- TAB 2 -->
             <div v-show="!displayAsTabs || (displayAsTabs && tabIndex === 1)">
                 <!-- RADICAL -->
                 <div v-if="isRadical(subject.data)" class="m-6">
@@ -80,40 +82,54 @@
                 </div>
 
                 <!-- KANJI -->
-                <div v-if="isKanji(subject.data)" class="m-6">
-                    <div class="text-xl my-3">Meaning Mnemonic</div>
-                    <hr>
-                    <div class="m-3">
-                        <WaniKaniText :text="subject.data.meaningMnemonic"></WaniKaniText>
-                        <div v-if="subject.data.meaningHint" class="m-3 p-3 border rounded-lg italic bg-gray-700">
-                            <div class="font-bold">Hint: </div>{{
-                                subject.data.meaningHint
-                            }}
+                <div v-if="isKanji(subject.data)" class="m-6 flex flex-row">
+                    <div class="w-45 mx-3 shrink-0">
+                        <div class="mb-9">
+                            <div class="text-xl my-3">Meanings</div>
+                            <hr>
+                            <div class="my-3">{{ subject.data.meanings.map(x => x.meaning).join(', ') }}</div>
                         </div>
                     </div>
-                    <div class="text-xl mt-6 mb-3">User Notes</div>
-                    <hr>
-                    <div class="m-3">
-                        <WaniKaniText :text="studyMaterial?.data.meaningNote ?? 'Add Note'"></WaniKaniText>
-                    </div>
-                    <div class="text-xl mt-6 mb-3">User Synonyms</div>
-                    <hr>
-                    <div class="m-3">
-                        <WaniKaniText :text="studyMaterial?.data.meaningSynonyms.join(', ') ?? 'Add Synonym'">
-                        </WaniKaniText>
+                    <div class="w-full">
+                        <div class="text-xl my-3">Meaning Mnemonic</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="subject.data.meaningMnemonic"></WaniKaniText>
+                            <div v-if="subject.data.meaningHint" class="m-3 p-3 border rounded-lg italic bg-gray-700">
+                                <div class="font-bold">Hint: </div>{{
+                                    subject.data.meaningHint
+                                }}
+                            </div>
+                        </div>
+                        <div class="text-xl mt-6 mb-3">User Notes</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="studyMaterial?.data.meaningNote ?? 'Add Note'"></WaniKaniText>
+                        </div>
+                        <div class="text-xl mt-6 mb-3">User Synonyms</div>
+                        <hr>
+                        <div class="m-3">
+                            <WaniKaniText :text="studyMaterial?.data.meaningSynonyms.join(', ') ?? 'Add Synonym'">
+                            </WaniKaniText>
+                        </div>
                     </div>
                 </div>
 
                 <!-- VOCAB -->
                 <div v-if="isVocabulary(subject.data)" class="m-6 flex flex-row">
                     <div class="w-45 mx-3 shrink-0">
+                        <div class="mb-9">
+                            <div class="text-xl my-3">Meanings</div>
+                            <hr>
+                            <div class="my-3">{{ subject.data.meanings.map(x => x.meaning).join(', ') }}</div>
+                        </div>
                         <div>
                             <div class="text-xl my-3">Word Type</div>
                             <hr>
                             <div>{{ subject.data.partsOfSpeech.join(', ') }}</div>
                         </div>
                     </div>
-                    <div>
+                    <div class="w-full">
                         <div class="text-xl my-3">Meaning Mnemonic</div>
                         <hr>
                         <div class="m-3">
@@ -134,6 +150,7 @@
                 </div>
             </div>
 
+            <!-- TAB 3 -->
             <div v-show="!displayAsTabs || (displayAsTabs && tabIndex === 2)">
                 <!-- KANJI -->
                 <div v-if="isKanji(subject.data)" class="m-6 flex flex-row">
@@ -198,6 +215,7 @@
                 </div>
             </div>
 
+            <!-- TAB 4 -->
             <div v-show="!displayAsTabs || (displayAsTabs && tabIndex === 3)">
                 <!-- KANJI -->
                 <div v-if="isKanji(subject.data)" class="m-6">

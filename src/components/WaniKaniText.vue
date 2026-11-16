@@ -1,7 +1,8 @@
 <template>
     <template v-for="text in textSections">
-        <span v-if="text.style == null">{{ text.value }}</span>
-        <span v-else :class="`px-1 my-0.5 border rounded-md inline-block ${text.style}`">{{ text.value }}</span>
+        <span v-if="text.style == null" class="whitespace-pre-line">{{ text.value }}</span>
+        <span v-else :class="`px-1 my-0.5 border rounded-md inline-block whitespace-pre-line ${text.style}`">{{
+            text.value }}</span>
     </template>
 </template>
 
@@ -33,7 +34,7 @@ const props = defineProps<{
 
 let textSections = computed(() =>
 {
-    let regex = /(?<previousText>.*?)<(?<object>radical|kanji|vocabulary|meaning|reading)>(?<value>.*?)<\/(?:radical|kanji|vocabulary|meaning|reading)>|.+/mg;
+    let regex = /(?<previousText>.*?)<(?<object>radical|kanji|vocabulary|meaning|reading)>(?<value>.*?)<\/(?:radical|kanji|vocabulary|meaning|reading)>|.+/mgs;
 
     let sections: TextSection[] = [];
     let match;
